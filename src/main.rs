@@ -26,10 +26,10 @@ fn main() {
 
     let players = (0..n_players)
         .map(|id| {
-            println!("Bitte gib den Namen von Person {} ein", id);
+            println!("Please enter the name of person {}:", id);
             let mut name_string = String::new();
             io::stdin().read_line(&mut name_string).unwrap();
-            Player::new(name_string, id)
+            Player::new(name_string.trim().parse().unwrap(), id)
         })
         .collect::<Vec<Player>>();
 
@@ -37,6 +37,10 @@ fn main() {
     game.init_players_stones();
 
     game.determine_start_player();
+
+    println!("{}: You will begin the game", game.get_current_player());
+    let mut enter = String::new();
+    io::stdin().read_line(&mut enter).unwrap();
 
     loop {
         print_current_round(&mut game);

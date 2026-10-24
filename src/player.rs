@@ -61,7 +61,7 @@ impl Player {
     }
     
     pub fn print_round_greeting(&self) {
-        println!("It's your turn player {}", self.name);
+        println!("It's your turn player {}", self);
     }
 }
 
