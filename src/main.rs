@@ -62,7 +62,7 @@ fn print_current_round(game: &mut Game) {
         let mut chosen_stone_string = String::new();
         io::stdin().read_line(&mut chosen_stone_string).unwrap();
         if let Ok(n) = chosen_stone_string.trim().parse::<usize>() {
-            match game.play_stone(n) {
+            match game.play_stone(n - 1) {
                 Ok(()) => {
                     break;
                 }

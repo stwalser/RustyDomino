@@ -41,7 +41,7 @@ impl Player {
 
     pub fn print_stones(&self) {
         self.stones.iter().enumerate().for_each(|(index, stone)| {
-            println!("{}: {}", index, stone);
+            println!("{}: {}", index + 1, stone);
         });
     }
 
