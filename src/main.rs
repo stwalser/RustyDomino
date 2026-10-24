@@ -29,7 +29,7 @@ fn main() {
             println!("Please enter the name of person {}:", id);
             let mut name_string = String::new();
             io::stdin().read_line(&mut name_string).unwrap();
-            Player::new(name_string.trim().parse().unwrap(), id)
+            Player::new(name_string.trim().parse().unwrap())
         })
         .collect::<Vec<Player>>();
 

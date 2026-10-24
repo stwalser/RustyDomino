@@ -14,15 +14,13 @@ pub enum PlayerError {
 #[derive(Debug, Clone)]
 pub struct Player {
     name: String,
-    id: usize,
     stones: Vec<Stone>,
 }
 
 impl Player {
-    pub fn new(name: String, id: usize) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             name,
-            id,
             stones: Vec::new(),
         }
     }
