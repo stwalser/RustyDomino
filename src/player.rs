@@ -57,7 +57,7 @@ impl Player {
     pub fn get_max_dot_sum(&self) -> Option<u8> {
         self.stones.iter().map(|stone| stone.dot_sum()).max()
     }
-    
+
     pub fn print_round_greeting(&self) {
         println!("It's your turn player {}", self);
     }

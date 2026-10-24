@@ -30,7 +30,7 @@ impl Queue {
             self.stones.push(stone.into_played_stone(closed))
         } else {
             if !stone.is_double() {
-                return Err(QueueError::DoubleNecessary)
+                return Err(QueueError::DoubleNecessary);
             }
             let dots = stone.get_dots();
             self.stones.push(stone.into_played_stone(dots[0]))

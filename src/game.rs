@@ -21,7 +21,7 @@ pub struct Game {
     queue: Queue,
     talon: Vec<Stone>,
     players: Vec<Player>,
-    current_player: usize
+    current_player: usize,
 }
 
 impl Game {
@@ -30,7 +30,7 @@ impl Game {
             queue: Queue::new(),
             talon: Self::shuffled_stones(),
             players: players.clone(),
-            current_player: 0
+            current_player: 0,
         }
     }
 
@@ -57,27 +57,24 @@ impl Game {
     pub fn play_stone(&mut self, n: usize) -> Result<(), GameError> {
         let player = &mut self.players[self.current_player];
         let stone = *player.propose_stone(n)?; // Stone ist Copy
-        self.queue.add(stone)?;                // anderes Feld, kein Konflikt
-        player.remove_stone(n);                // nur bei Erfolg
+        self.queue.add(stone)?; // anderes Feld, kein Konflikt
+        player.remove_stone(n); // nur bei Erfolg
         Ok(())
     }
 
     pub fn determine_start_player(&mut self) {
-        self.current_player = self.players
+        self.current_player = self
+            .players
             .iter()
             .enumerate()
-            .filter_map(|(index, player)| {
-                player.get_max_double().map(|stone| (index, stone))
-            })
+            .filter_map(|(index, player)| player.get_max_double().map(|stone| (index, stone)))
             .max_by_key(|&(_, stone)| stone.double_value())
             .map(|(player, _)| player)
             .unwrap_or_else(|| {
                 self.players
                     .iter()
                     .enumerate()
-                    .filter_map(|(index, player)| {
-                        player.get_max_dot_sum().map(|sum| (index, sum))
-                    })
+                    .filter_map(|(index, player)| player.get_max_dot_sum().map(|sum| (index, sum)))
                     .max_by_key(|&(_, sum)| sum)
                     .map(|(index, _)| index)
                     .unwrap()
