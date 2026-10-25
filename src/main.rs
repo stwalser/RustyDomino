@@ -57,8 +57,7 @@ fn main() {
     move_and_clear(2);
     loop {
         print_current_round(&mut game);
-        // if let Err(_) = game.draw_for_current_player() {}
-        move_and_clear(3 + 1 + game.get_current_player().get_n_stones() as u16 + 1 + 2);
+        move_and_clear(3 + 1 + game.get_n_stones_of_current_player() + 1 + 2);
         game.next_player();
     }
 }
@@ -87,32 +86,42 @@ fn wait_for_press_of(key_code: KeyCode) {
 fn print_current_round(game: &mut Game) {
     game.print_queue(); // 3 lines
 
-    let player = game.get_current_player();
-
-    player.print_round_greeting(); // 1 line
-    player.print_stones(); // x lines
-
     loop {
-        println!("Which stone do you want to play?"); // 1 line
-        let mut chosen_stone_string = String::new();
-        io::stdin().read_line(&mut chosen_stone_string).unwrap(); // 1 line
-        if let Ok(n) = chosen_stone_string.trim().parse::<usize>() {
-            match game.play_stone(n - 1) {
-                Ok(()) => {
-                    break;
+        game.print_round_greeting(); // 1 line
+        game.print_current_player_stones(); // x lines
+        let mut wrong_input_message = "".to_string();
+        let mut input_string = String::new();
+        if game.current_player_can_make_a_move() {
+            println!("Which stone do you want to play?"); // 1 line
+            io::stdin().read_line(&mut input_string).unwrap(); // 1 line
+            let input = input_string.trim().to_string();
+            if let Ok(n) = input.parse::<usize>() {
+                match game.play_stone(n - 1) {
+                    Ok(()) => {
+                        break;
+                    }
+                    Err(GameError::Queue(QueueError::DoubleNecessary)) => {
+                        wrong_input_message = "Start with a double! ".to_string();
+                    }
+                    Err(e) => {
+                        wrong_input_message = e.to_string();
+                    }
                 }
-                Err(GameError::Queue(QueueError::DoubleNecessary)) => {
-                    move_and_clear(2);
-                    print!("Start with a double! ")
-                }
-                Err(e) => {
-                    move_and_clear(2);
-                    print!("{e} ")
-                }
+            } else {
+                wrong_input_message = "Enter a number to choose a stone! ".to_string();
             }
         } else {
-            move_and_clear(2);
-            print!("Enter a number to choose a stone! ")
+            println!("You cannot make a move. Press 'd' for drawing two stones from the talon");
+            io::stdin().read_line(&mut input_string).unwrap(); // 1 line
+            let input = input_string.trim().to_string();
+            if input == "d" {
+                if let Err(_) = game.draw_for_current_player() {};
+            } else {
+                wrong_input_message = "".to_string();
+            }
         }
+
+        move_and_clear(1 + 2 + game.get_n_stones_of_current_player() - 1); // the player has one store more than printed already
+        print!("{}", wrong_input_message)
     }
 }

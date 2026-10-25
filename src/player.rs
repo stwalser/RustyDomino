@@ -1,4 +1,4 @@
-use crate::queue::QueueError;
+use crate::queue::{Queue, QueueError};
 use crate::stone::Stone;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
@@ -9,8 +9,8 @@ pub enum PlayerError {
     CannotPlayThisStone(#[from] QueueError),
     #[error("You don't have that many stones!!!")]
     NoSuchStone,
-    #[error("You need to play your highest double first! ")]
-    HighestDouble
+    // #[error("You need to play your highest double first! ")]
+    // HighestDouble
 }
 
 #[derive(Debug, Clone)]
@@ -64,8 +64,8 @@ impl Player {
         self.stones.iter().map(|stone| stone.dot_sum()).max()
     }
 
-    pub fn print_round_greeting(&self) {
-        println!("It's your turn player {}", self);
+    pub fn can_play_stone(&self, queue: &Queue) -> bool {
+        self.stones.iter().any(|stone| {queue.is_playable(stone)})
     }
 }
 

@@ -42,12 +42,14 @@ impl Game {
     }
 
     pub fn draw_for_current_player(&mut self) -> Result<(), GameError> {
-        if let Some(stone) = self.talon.pop() {
-            self.players[self.current_player].assign_new_stone(stone);
-            Ok(())
-        } else {
-            Err(GameError::NoMoreStones)
+        for _ in 0..2 {
+            if let Some(stone) = self.talon.pop() {
+                self.players[self.current_player].assign_new_stone(stone);
+            } else {
+                return Err(GameError::NoMoreStones)
+            }
         }
+        Ok(())
     }
 
     pub fn print_queue(&self) {
@@ -83,6 +85,22 @@ impl Game {
 
     pub fn get_current_player(&mut self) -> &mut Player {
         &mut self.players[self.current_player]
+    }
+
+    pub fn print_round_greeting(&self) {
+        println!("It's your turn player {}", self.players[self.current_player]);
+    }
+
+    pub fn print_current_player_stones(&self) {
+        self.players[self.current_player].print_stones();
+    }
+
+    pub fn current_player_can_make_a_move(&self) -> bool {
+        self.players[self.current_player].can_play_stone(&self.queue)
+    }
+
+    pub fn get_n_stones_of_current_player(&self) -> u16 {
+        self.players[self.current_player].get_n_stones() as u16
     }
 
     pub fn next_player(&mut self) {

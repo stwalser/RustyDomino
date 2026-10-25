@@ -38,6 +38,15 @@ impl Queue {
 
         Ok(())
     }
+
+    pub fn is_playable(&self, stone: &Stone) -> bool {
+        if self.stones.is_empty() {
+            return true
+        }
+        stone
+            .get_dots()
+            .contains(&self.stones.last().unwrap().get_open())
+    }
 }
 
 impl Display for Queue {
