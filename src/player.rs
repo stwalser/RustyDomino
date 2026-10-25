@@ -9,6 +9,8 @@ pub enum PlayerError {
     CannotPlayThisStone(#[from] QueueError),
     #[error("You don't have that many stones!!!")]
     NoSuchStone,
+    #[error("You need to play your highest double first! ")]
+    HighestDouble
 }
 
 #[derive(Debug, Clone)]
@@ -41,6 +43,10 @@ impl Player {
         self.stones.iter().enumerate().for_each(|(index, stone)| {
             println!("{}: {}", index + 1, stone);
         });
+    }
+
+    pub fn get_n_stones(&self) -> usize {
+        self.stones.len()
     }
 
     pub fn propose_stone(&self, n: usize) -> Result<&Stone, PlayerError> {

@@ -4,9 +4,9 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum QueueError {
-    #[error("This stone cannot be played")]
+    #[error("This stone cannot be played! ")]
     MoveNotPossibleError,
-    #[error("You need to play a double as your first move")]
+    #[error("You need to play a double as your first move! ")]
     DoubleNecessary,
 }
 
