@@ -8,7 +8,8 @@ pub enum QueueError {
     MoveNotPossibleError,
     #[error("You need to play a double as your first move! ")]
     DoubleNecessary,
-    #[error("You need to play your highest double first! If you don't have a double, the stone with the highest dot sum! "
+    #[error(
+        "You need to play your highest double first! If you don't have a double, the stone with the highest dot sum! "
     )]
     HighestDouble,
 }
@@ -39,7 +40,7 @@ impl Queue {
             if !stone.is_double() {
                 return Err(QueueError::DoubleNecessary);
             } else if stone != self.expected_start_stone.unwrap() {
-                return Err(QueueError::HighestDouble)
+                return Err(QueueError::HighestDouble);
             }
             let dots = stone.get_dots();
             self.stones.push(stone.into_played_stone(dots[0]))

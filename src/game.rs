@@ -112,6 +112,10 @@ impl Game {
         self.current_player = (self.current_player + 1) % self.players.len()
     }
 
+    pub fn current_player_won(&self) -> bool {
+        self.get_current_player().has_no_stones_left()
+    }
+
     fn shuffled_stones() -> Vec<Stone> {
         let mut stones: Vec<Stone> = (0..=HIGHEST_NUMBER)
             .flat_map(|i| (0..=i).map(move |j| Stone::new(i, j)))

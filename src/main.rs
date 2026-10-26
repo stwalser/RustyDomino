@@ -55,8 +55,14 @@ fn main() -> io::Result<()> {
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
         print_current_round(&mut game)?;
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-        game.next_player();
+        if game.current_player_won() { 
+            println!("Congratulations!!! You won!!!");
+            break;
+        } else {
+            game.next_player();
+        }
     }
+    Ok(())
 }
 
 fn wait_for_press_of(key_code: KeyCode) {
