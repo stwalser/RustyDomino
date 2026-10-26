@@ -48,10 +48,7 @@ fn main() {
     game.determine_start_player();
 
     move_and_clear(2);
-    println!(
-        "{}: You will begin the game. Press enter when you're ready.",
-        game.get_current_player()
-    );
+    game.print_start_message();
     wait_for_press_of(Enter);
 
     move_and_clear(2);
