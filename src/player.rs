@@ -7,10 +7,8 @@ use thiserror::Error;
 pub enum PlayerError {
     #[error(transparent)]
     CannotPlayThisStone(#[from] QueueError),
-    #[error("You don't have that many stones!!!")]
+    #[error("You don't have that many stones!!! ")]
     NoSuchStone,
-    // #[error("You need to play your highest double first! ")]
-    // HighestDouble
 }
 
 #[derive(Debug, Clone)]
@@ -60,12 +58,16 @@ impl Player {
             .max_by_key(|stone| stone.double_value())
     }
 
-    pub fn get_max_dot_sum(&self) -> Option<u8> {
-        self.stones.iter().map(|stone| stone.dot_sum()).max()
+    pub fn get_max_dot_sum_stone(&self) -> Option<&Stone> {
+        self.stones
+            .iter()
+            .map(|stone| (stone, stone.dot_sum()))
+            .max_by_key(|(_, sum)| *sum)
+            .map(|(stone, _)| stone)
     }
 
     pub fn can_play_stone(&self, queue: &Queue) -> bool {
-        self.stones.iter().any(|stone| {queue.is_playable(stone)})
+        self.stones.iter().any(|stone| queue.is_playable(stone))
     }
 }
 

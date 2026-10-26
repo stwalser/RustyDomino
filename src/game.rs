@@ -65,22 +65,22 @@ impl Game {
     }
 
     pub fn determine_start_player(&mut self) {
-        self.current_player = self
+        let (start_player, start_stone) = self
             .players
             .iter()
             .enumerate()
             .filter_map(|(index, player)| player.get_max_double().map(|stone| (index, stone)))
             .max_by_key(|&(_, stone)| stone.double_value())
-            .map(|(player, _)| player)
             .unwrap_or_else(|| {
                 self.players
                     .iter()
                     .enumerate()
-                    .filter_map(|(index, player)| player.get_max_dot_sum().map(|sum| (index, sum)))
-                    .max_by_key(|&(_, sum)| sum)
-                    .map(|(index, _)| index)
+                    .filter_map(|(index, player)| player.get_max_dot_sum_stone().map(|stone| (index, stone)))
+                    .max_by_key(|&(_, stone)| stone.dot_sum())
                     .unwrap()
-            })
+            });
+        self.current_player = start_player;
+        self.queue.set_expected_start_stone(*start_stone);
     }
 
     fn get_current_player(&self) -> &Player {

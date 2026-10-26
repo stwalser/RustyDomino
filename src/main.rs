@@ -88,6 +88,7 @@ fn print_current_round(game: &mut Game) {
         game.print_current_player_stones(); // x lines
         let mut wrong_input_message = "".to_string();
         let mut input_string = String::new();
+        let mut drew_two_stones = false;
         if game.current_player_can_make_a_move() {
             println!("Which stone do you want to play?"); // 1 line
             io::stdin().read_line(&mut input_string).unwrap(); // 1 line
@@ -97,8 +98,8 @@ fn print_current_round(game: &mut Game) {
                     Ok(()) => {
                         break;
                     }
-                    Err(GameError::Queue(QueueError::DoubleNecessary)) => {
-                        wrong_input_message = "Start with a double! ".to_string();
+                    Err(GameError::Queue(e)) => {
+                        wrong_input_message = e.to_string();
                     }
                     Err(e) => {
                         wrong_input_message = e.to_string();
@@ -113,12 +114,15 @@ fn print_current_round(game: &mut Game) {
             let input = input_string.trim().to_string();
             if input == "d" {
                 if let Err(_) = game.draw_for_current_player() {};
+                drew_two_stones = true;
             } else {
                 wrong_input_message = "".to_string();
             }
         }
 
-        move_and_clear(1 + 2 + game.get_n_stones_of_current_player() - 1); // the player has one store more than printed already
+        move_and_clear(
+            1 + 2 + game.get_n_stones_of_current_player() + if drew_two_stones { 2 } else { 0 },
+        ); // the player has one store more than printed already
         print!("{}", wrong_input_message)
     }
 }
