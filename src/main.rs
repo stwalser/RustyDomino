@@ -5,7 +5,6 @@ mod stone;
 
 use crate::game::{Game, GameError};
 use crate::player::Player;
-use crate::queue::QueueError;
 use crossterm::cursor::MoveUp;
 use crossterm::event::KeyCode::Enter;
 use crossterm::event::{Event, KeyCode, read};
@@ -48,13 +47,9 @@ fn main() {
     game.determine_start_player();
 
     move_and_clear(2);
-    game.print_start_message();
-    wait_for_press_of(Enter);
-
-    move_and_clear(2);
     loop {
         print_current_round(&mut game);
-        move_and_clear(3 + 1 + game.get_n_stones_of_current_player() + 1 + 2);
+        move_and_clear(3 + 1 + game.get_n_stones_of_current_player() + 1 + 1 + 2);
         game.next_player();
     }
 }
@@ -82,13 +77,16 @@ fn wait_for_press_of(key_code: KeyCode) {
 
 fn print_current_round(game: &mut Game) {
     game.print_queue(); // 3 lines
+    game.print_round_greeting(); // 1 line
+    wait_for_press_of(Enter); // 1 line
 
+    let mut drew_two_stones = false;
     loop {
-        game.print_round_greeting(); // 1 line
         game.print_current_player_stones(); // x lines
+
         let mut wrong_input_message = "".to_string();
         let mut input_string = String::new();
-        let mut drew_two_stones = false;
+
         if game.current_player_can_make_a_move() {
             println!("Which stone do you want to play?"); // 1 line
             io::stdin().read_line(&mut input_string).unwrap(); // 1 line
@@ -121,8 +119,8 @@ fn print_current_round(game: &mut Game) {
         }
 
         move_and_clear(
-            1 + 2 + game.get_n_stones_of_current_player() + if drew_two_stones { 2 } else { 0 },
+            1 + 1 + game.get_n_stones_of_current_player() - if drew_two_stones { 2 } else { 0 } + 1,
         ); // the player has one store more than printed already
-        print!("{}", wrong_input_message)
+        println!("{}", wrong_input_message)
     }
 }

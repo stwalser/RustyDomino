@@ -1,4 +1,3 @@
-use std::cmp::PartialEq;
 use crate::stone::{PlayedStone, Stone};
 use std::fmt::{Display, Formatter};
 use thiserror::Error;

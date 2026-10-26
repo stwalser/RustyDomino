@@ -87,15 +87,8 @@ impl Game {
         &self.players[self.current_player]
     }
 
-    pub fn print_start_message(&self) {
-        println!(
-            "{}: You will begin the game. Press enter when you're ready.",
-            self.get_current_player()
-        );
-    }
-
     pub fn print_round_greeting(&self) {
-        println!("It's your turn player {}", self.get_current_player());
+        println!("It's your turn player {}. Press 'enter' when you're ready.", self.get_current_player());
     }
 
     pub fn print_current_player_stones(&self) {
