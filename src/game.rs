@@ -9,8 +9,10 @@ static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
 
 #[derive(Debug, Error)]
 pub enum GameError {
-    #[error("All stones have been drawn")]
+    #[error("All stones have been drawn ")]
     NoMoreStones,
+    #[error("Only one stone was left ")]
+    OnlyOneStone,
     #[error(transparent)]
     Queue(#[from] QueueError),
     #[error(transparent)]
@@ -42,14 +44,16 @@ impl Game {
     }
 
     pub fn draw_for_current_player(&mut self) -> Result<(), GameError> {
-        for _ in 0..2 {
-            if let Some(stone) = self.talon.pop() {
-                self.players[self.current_player].assign_new_stone(stone);
-            } else {
-                return Err(GameError::NoMoreStones);
-            }
+        if self.talon.len() >= 2 {
+            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
+            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
+            Ok(())
+        } else if self.talon.len() == 1 {
+            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
+            return Err(GameError::OnlyOneStone);
+        } else {
+            return Err(GameError::NoMoreStones);
         }
-        Ok(())
     }
 
     pub fn print_queue(&self) {
@@ -75,7 +79,9 @@ impl Game {
                 self.players
                     .iter()
                     .enumerate()
-                    .filter_map(|(index, player)| player.get_max_dot_sum_stone().map(|stone| (index, stone)))
+                    .filter_map(|(index, player)| {
+                        player.get_max_dot_sum_stone().map(|stone| (index, stone))
+                    })
                     .max_by_key(|&(_, stone)| stone.dot_sum())
                     .unwrap()
             });
@@ -88,7 +94,10 @@ impl Game {
     }
 
     pub fn print_round_greeting(&self) {
-        println!("It's your turn player {}. Press 'enter' when you're ready.", self.get_current_player());
+        println!(
+            "It's your turn {}. Press 'enter' when you're ready.",
+            self.get_current_player()
+        );
     }
 
     pub fn print_current_player_stones(&self) {
@@ -97,10 +106,6 @@ impl Game {
 
     pub fn current_player_can_make_a_move(&self) -> bool {
         self.get_current_player().can_play_stone(&self.queue)
-    }
-
-    pub fn get_n_stones_of_current_player(&self) -> u16 {
-        self.get_current_player().get_n_stones() as u16
     }
 
     pub fn next_player(&mut self) {

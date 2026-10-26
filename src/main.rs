@@ -5,7 +5,7 @@ mod stone;
 
 use crate::game::{Game, GameError};
 use crate::player::Player;
-use crossterm::cursor::MoveUp;
+use crossterm::cursor::{RestorePosition, SavePosition};
 use crossterm::event::KeyCode::Enter;
 use crossterm::event::{Event, KeyCode, read};
 use crossterm::execute;
@@ -13,27 +13,29 @@ use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 
-fn main() {
-    println!("Welcome to Domino");
+fn main() -> io::Result<()> {
+    println!("RustyDomino");
+    execute!(io::stdout(), SavePosition)?;
+    println!("Welcome to RustyDomino!");
     let n_players = loop {
         println!("How many people will play (2-4)?");
         let mut n_players_string = String::new();
-        io::stdin().read_line(&mut n_players_string).unwrap();
+        io::stdin().read_line(&mut n_players_string)?;
         if let Ok(n) = n_players_string.trim().parse::<usize>() {
             if n >= 2 && n <= 4 {
                 break n;
             }
-            move_and_clear(2);
-            print!("{} players are not supported! ", n)
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+            println!("{} players are not supported! ", n)
         } else {
-            move_and_clear(2);
-            print!("Please enter a number! ")
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+            println!("Please enter a number! ")
         }
     };
 
     let players = (0..n_players)
         .map(|id| {
-            move_and_clear(2);
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
             println!("Please enter the name of person {}:", id + 1);
             let mut name_string = String::new();
             io::stdin().read_line(&mut name_string).unwrap();
@@ -46,16 +48,15 @@ fn main() {
 
     game.determine_start_player();
 
-    move_and_clear(2);
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     loop {
-        print_current_round(&mut game);
-        move_and_clear(3 + 1 + game.get_n_stones_of_current_player() + 1 + 1 + 2);
+        game.print_round_greeting();
+        wait_for_press_of(Enter);
+        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+        print_current_round(&mut game)?;
+        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
         game.next_player();
     }
-}
-
-fn move_and_clear(lines: u16) {
-    execute!(io::stdout(), MoveUp(lines), Clear(FromCursorDown)).unwrap();
 }
 
 fn wait_for_press_of(key_code: KeyCode) {
@@ -75,57 +76,69 @@ fn wait_for_press_of(key_code: KeyCode) {
     }
 }
 
-fn print_current_round(game: &mut Game) {
-    game.print_queue(); // 3 lines
-    game.print_round_greeting(); // 1 line
-    wait_for_press_of(Enter); // 1 line
-
+fn print_current_round(game: &mut Game) -> io::Result<()> {
     let mut drew_two_stones = false;
-    loop {
-        game.print_current_player_stones(); // x lines
+    let mut last_round_feedback = "".to_string();
 
-        let mut wrong_input_message = "".to_string();
+    loop {
+        game.print_queue();
+        game.print_current_player_stones();
+
         let mut input_string = String::new();
 
+        println!("{}", last_round_feedback);
         if game.current_player_can_make_a_move() {
-            println!("Which stone do you want to play?"); // 1 line
-            io::stdin().read_line(&mut input_string).unwrap(); // 1 line
+            println!("Which stone do you want to play?");
+            io::stdin().read_line(&mut input_string)?;
             let input = input_string.trim().to_string();
+
             if let Ok(n) = input.parse::<usize>() {
                 match game.play_stone(n - 1) {
                     Ok(()) => {
                         break;
                     }
                     Err(GameError::Queue(e)) => {
-                        wrong_input_message = e.to_string();
+                        last_round_feedback = e.to_string();
                     }
                     Err(e) => {
-                        wrong_input_message = e.to_string();
+                        last_round_feedback = e.to_string();
                     }
                 }
             } else {
-                wrong_input_message = "Enter a number to choose a stone! ".to_string();
+                last_round_feedback = "Enter a number to choose a stone! ".to_string();
             }
         } else {
             if drew_two_stones {
                 println!("You still cannot make a move. Press 'enter' to confirm.");
                 wait_for_press_of(Enter);
-                return;
+                break;
             }
             println!("You cannot make a move. Press 'd' for drawing two stones from the talon.");
-            io::stdin().read_line(&mut input_string).unwrap(); // 1 line
+            io::stdin().read_line(&mut input_string)?;
             let input = input_string.trim().to_string();
             if input == "d" {
-                if let Err(_) = game.draw_for_current_player() {};
+                // if input is not 'd', we do another loop until it is
+                match game.draw_for_current_player() {
+                    Ok(_) => {}
+                    Err(e) => match e {
+                        GameError::NoMoreStones => {
+                            println!(
+                                "There are no stones left in the talon. You cannot make a move. Press 'enter' to confirm"
+                            );
+                            wait_for_press_of(Enter);
+                            break;
+                        }
+                        GameError::OnlyOneStone => {
+                            last_round_feedback =
+                                "There was only one stone left in the talon".to_string();
+                        }
+                        _ => {}
+                    },
+                };
                 drew_two_stones = true;
-            } else {
-                wrong_input_message = "".to_string();
             }
         }
-
-        move_and_clear(
-            1 + 1 + game.get_n_stones_of_current_player() - if drew_two_stones { 2 } else { 0 } + 1,
-        ); // the player has one store more than printed already
-        println!("{}", wrong_input_message)
+        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     }
+    Ok(())
 }

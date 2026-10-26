@@ -43,10 +43,6 @@ impl Player {
         });
     }
 
-    pub fn get_n_stones(&self) -> usize {
-        self.stones.len()
-    }
-
     pub fn propose_stone(&self, n: usize) -> Result<&Stone, PlayerError> {
         self.stones.get(n).ok_or(PlayerError::NoSuchStone)
     }
