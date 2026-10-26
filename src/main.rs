@@ -107,7 +107,12 @@ fn print_current_round(game: &mut Game) {
                 wrong_input_message = "Enter a number to choose a stone! ".to_string();
             }
         } else {
-            println!("You cannot make a move. Press 'd' for drawing two stones from the talon");
+            if drew_two_stones {
+                println!("You still cannot make a move. Press 'enter' to confirm.");
+                wait_for_press_of(Enter);
+                return;
+            }
+            println!("You cannot make a move. Press 'd' for drawing two stones from the talon.");
             io::stdin().read_line(&mut input_string).unwrap(); // 1 line
             let input = input_string.trim().to_string();
             if input == "d" {
