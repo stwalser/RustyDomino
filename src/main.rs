@@ -55,7 +55,7 @@ fn main() -> io::Result<()> {
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
         print_current_round(&mut game)?;
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-        if game.current_player_won() { 
+        if game.current_player_won() {
             println!("Congratulations!!! You won!!!");
             break;
         } else {
@@ -83,7 +83,6 @@ fn wait_for_press_of(key_code: KeyCode) {
 }
 
 fn print_current_round(game: &mut Game) -> io::Result<()> {
-    let mut drew_two_stones = false;
     let mut last_round_feedback = "".to_string();
 
     loop {
@@ -113,36 +112,13 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
             } else {
                 last_round_feedback = "Enter a number to choose a stone! ".to_string();
             }
+        } else if game.talon_not_empty() {
+            println!("You cannot make a move. Press 'd' for drawing a stone from the talon.");
+            wait_for_press_of(Char('d'));
+            game.draw_for_current_player()
         } else {
-            if drew_two_stones {
-                println!("You still cannot make a move. Press 'enter' to confirm.");
-                wait_for_press_of(Enter);
-                break;
-            }
-            println!("You cannot make a move. Press 'd' for drawing two stones from the talon.");
-            io::stdin().read_line(&mut input_string)?;
-            let input = input_string.trim().to_string();
-            if input == "d" {
-                // if input is not 'd', we do another loop until it is
-                match game.draw_for_current_player() {
-                    Ok(_) => {}
-                    Err(e) => match e {
-                        GameError::NoMoreStones => {
-                            println!(
-                                "There are no stones left in the talon. You cannot make a move. Press 'enter' to confirm"
-                            );
-                            wait_for_press_of(Enter);
-                            break;
-                        }
-                        GameError::OnlyOneStone => {
-                            last_round_feedback =
-                                "There was only one stone left in the talon".to_string();
-                        }
-                        _ => {}
-                    },
-                };
-                drew_two_stones = true;
-            }
+            println!("You cannot make a move and the talon is empty. Press 'enter' to confirm");
+            wait_for_press_of(Enter)
         }
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     }

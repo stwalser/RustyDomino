@@ -11,8 +11,6 @@ static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
 pub enum GameError {
     #[error("All stones have been drawn ")]
     NoMoreStones,
-    #[error("Only one stone was left ")]
-    OnlyOneStone,
     #[error(transparent)]
     Queue(#[from] QueueError),
     #[error(transparent)]
@@ -43,17 +41,12 @@ impl Game {
         }
     }
 
-    pub fn draw_for_current_player(&mut self) -> Result<(), GameError> {
-        if self.talon.len() >= 2 {
-            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
-            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
-            Ok(())
-        } else if self.talon.len() == 1 {
-            self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap());
-            return Err(GameError::OnlyOneStone);
-        } else {
-            return Err(GameError::NoMoreStones);
-        }
+    pub fn talon_not_empty(&self) -> bool {
+        !self.talon.is_empty()
+    }
+
+    pub fn draw_for_current_player(&mut self) {
+        self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap())
     }
 
     pub fn print_queue(&self) {
