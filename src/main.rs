@@ -9,7 +9,7 @@ use crossterm::cursor::{MoveTo, RestorePosition, SavePosition};
 use crossterm::event::KeyCode::{Char, Enter};
 use crossterm::event::{Event, KeyCode, read};
 use crossterm::execute;
-use crossterm::terminal::Clear;
+use crossterm::terminal::{enable_raw_mode, Clear, disable_raw_mode};
 use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 
@@ -52,7 +52,7 @@ fn main() -> io::Result<()> {
     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     loop {
         game.print_round_greeting();
-        wait_for_press_of(Enter);
+        wait_for_press_of(Enter)?;
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
         print_current_round(&mut game)?;
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
@@ -66,14 +66,15 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn wait_for_press_of(key_code: KeyCode) {
+fn wait_for_press_of(key_code: KeyCode) -> io::Result<()> {
+    enable_raw_mode()?;
     loop {
-        match read().unwrap() {
+        match read()? {
             Event::FocusGained => {}
             Event::FocusLost => {}
             Event::Key(key) => {
                 if key.code == key_code {
-                    return;
+                    break;
                 }
             }
             Event::Mouse(_) => {}
@@ -81,6 +82,8 @@ fn wait_for_press_of(key_code: KeyCode) {
             Event::Resize(_, _) => {}
         }
     }
+    disable_raw_mode()?;
+    Ok(())
 }
 
 fn print_current_round(game: &mut Game) -> io::Result<()> {
@@ -115,11 +118,11 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
             }
         } else if game.talon_not_empty() {
             println!("You cannot make a move. Press 'd' for drawing a stone from the talon.");
-            wait_for_press_of(Char('d'));
+            wait_for_press_of(Char('d'))?;
             game.draw_for_current_player()
         } else {
             println!("You cannot make a move and the talon is empty. Press 'enter' to confirm");
-            wait_for_press_of(Enter)
+            wait_for_press_of(Enter)?
         }
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     }
