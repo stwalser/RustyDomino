@@ -27,9 +27,14 @@ impl Stone {
         vec![self.a, self.b]
     }
 
-    pub fn into_played_stone(self, closed: u8) -> PlayedStone {
-        let open = if self.b == closed { self.a } else { self.b };
-        PlayedStone { open, closed }
+    pub fn into_played_stone_by_right(self, right: u8) -> PlayedStone {
+        let left = if self.b == right { self.a } else { self.b };
+        PlayedStone { left, right }
+    }
+
+    pub fn into_played_stone_by_left(self, left: u8) -> PlayedStone {
+        let right = if self.b == left { self.a } else { self.b };
+        PlayedStone { left, right }
     }
 }
 
@@ -41,18 +46,27 @@ impl Display for Stone {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PlayedStone {
-    closed: u8,
-    open: u8,
+    left: u8,
+    right: u8,
 }
 
 impl Display for PlayedStone {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}, {}]", self.closed, self.open)
+        write!(f, "[{}, {}]", self.left, self.right)
     }
 }
 
 impl PlayedStone {
-    pub fn get_open(&self) -> u8 {
-        self.open
+    
+    pub fn get_left(&self) -> u8 {
+        self.left
+    }
+
+    pub fn get_right(&self) -> u8 {
+        self.right
+    }
+
+    pub fn is_double(&self) -> bool {
+        self.left == self.right
     }
 }

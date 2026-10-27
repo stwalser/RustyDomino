@@ -5,8 +5,8 @@ mod stone;
 
 use crate::game::{Game, GameError};
 use crate::player::Player;
-use crossterm::cursor::{RestorePosition, SavePosition};
-use crossterm::event::KeyCode::Enter;
+use crossterm::cursor::{MoveTo, RestorePosition, SavePosition};
+use crossterm::event::KeyCode::{Char, Enter};
 use crossterm::event::{Event, KeyCode, read};
 use crossterm::execute;
 use crossterm::terminal::Clear;
@@ -14,7 +14,8 @@ use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 
 fn main() -> io::Result<()> {
-    println!("RustyDomino");
+    execute!(io::stdout(), MoveTo(0, 0), Clear(FromCursorDown))?;
+    println!("---RustyDomino---");
     execute!(io::stdout(), SavePosition)?;
     println!("Welcome to RustyDomino!");
     let n_players = loop {
@@ -86,7 +87,7 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
     let mut last_round_feedback = "".to_string();
 
     loop {
-        game.print_queue();
+        game.print_board();
         game.print_current_player_stones();
 
         let mut input_string = String::new();

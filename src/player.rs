@@ -65,7 +65,7 @@ impl Player {
     pub fn can_play_stone(&self, queue: &Queue) -> bool {
         self.stones.iter().any(|stone| queue.is_playable(stone))
     }
-    
+
     pub fn has_no_stones_left(&self) -> bool {
         self.stones.is_empty()
     }

@@ -1,4 +1,5 @@
 use crate::stone::{PlayedStone, Stone};
+use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 
@@ -16,37 +17,46 @@ pub enum QueueError {
 
 #[derive(Debug, Clone)]
 pub struct Queue {
-    stones: Vec<PlayedStone>,
+    stones: VecDeque<PlayedStone>,
     expected_start_stone: Option<Stone>,
 }
 
 impl Queue {
     pub fn new() -> Queue {
         Queue {
-            stones: Vec::new(),
+            stones: VecDeque::new(),
             expected_start_stone: None,
         }
     }
 
     pub fn add(&mut self, stone: Stone) -> Result<(), QueueError> {
-        if let Some(last_played) = self.stones.last() {
-            if !stone.get_dots().contains(&last_played.get_open()) {
-                return Err(QueueError::MoveNotPossibleError);
-            }
-
-            let closed = last_played.get_open();
-            self.stones.push(stone.into_played_stone(closed))
-        } else {
+        if self.stones.is_empty() {
             if !stone.is_double() {
                 return Err(QueueError::DoubleNecessary);
             } else if stone != self.expected_start_stone.unwrap() {
                 return Err(QueueError::HighestDouble);
             }
             let dots = stone.get_dots();
-            self.stones.push(stone.into_played_stone(dots[0]))
+            self.stones
+                .push_back(stone.into_played_stone_by_right(dots[0])); // it is a double. It doesn't matter
+            return Ok(())
+        } else {
+            if let Some(last_stone) = self.stones.back() {
+                if stone.get_dots().contains(&last_stone.get_right()) {
+                    let left = last_stone.get_right();
+                    self.stones.push_back(stone.into_played_stone_by_left(left));
+                    return Ok(());
+                } else if let Some(first_stone) = self.stones.front() {
+                    if stone.get_dots().contains(&first_stone.get_left()) {
+                        let right = first_stone.get_left();
+                        self.stones
+                            .push_front(stone.into_played_stone_by_right(right));
+                        return Ok(());
+                    }
+                }
+            }
         }
-
-        Ok(())
+        Err(QueueError::MoveNotPossibleError)
     }
 
     pub fn is_playable(&self, stone: &Stone) -> bool {
@@ -55,7 +65,10 @@ impl Queue {
         }
         stone
             .get_dots()
-            .contains(&self.stones.last().unwrap().get_open())
+            .contains(&self.stones.back().unwrap().get_right())
+            || stone
+                .get_dots()
+                .contains(&self.stones.front().unwrap().get_left())
     }
 
     pub fn set_expected_start_stone(&mut self, stone: Stone) {

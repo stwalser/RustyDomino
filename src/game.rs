@@ -5,12 +5,11 @@ use rand::seq::SliceRandom;
 use thiserror::Error;
 
 const HIGHEST_NUMBER: u8 = 6;
+const DIVISOR: u8 = 3;
 static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
 
 #[derive(Debug, Error)]
 pub enum GameError {
-    #[error("All stones have been drawn ")]
-    NoMoreStones,
     #[error(transparent)]
     Queue(#[from] QueueError),
     #[error(transparent)]
@@ -49,7 +48,7 @@ impl Game {
         self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap())
     }
 
-    pub fn print_queue(&self) {
+    pub fn print_board(&self) {
         println!("{}", self.queue);
     }
 
