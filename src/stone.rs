@@ -57,7 +57,6 @@ impl Display for PlayedStone {
 }
 
 impl PlayedStone {
-    
     pub fn get_left(&self) -> u8 {
         self.left
     }

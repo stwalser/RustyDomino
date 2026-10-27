@@ -1,5 +1,5 @@
 use crate::player::{Player, PlayerError};
-use crate::queue::{Queue, QueueError};
+use crate::queue::{Playable, Queue, QueueError};
 use crate::stone::Stone;
 use rand::seq::SliceRandom;
 use thiserror::Error;
@@ -52,12 +52,18 @@ impl Game {
         println!("{}", self.queue);
     }
 
-    pub fn play_stone(&mut self, n: usize) -> Result<(), GameError> {
+    pub fn play_stone(&mut self, n: usize, playable: Playable) -> Result<(), GameError> {
         let player = &mut self.players[self.current_player];
-        let stone = *player.propose_stone(n)?; // Stone ist Copy
-        self.queue.add(stone)?; // anderes Feld, kein Konflikt
+        let stone = *player.get_stone(n)?;
+        self.queue.add(stone, playable)?; // anderes Feld, kein Konflikt
         player.remove_stone(n); // nur bei Erfolg
         Ok(())
+    }
+
+    pub fn check_stone(&mut self, n: usize) -> Result<Playable, GameError> {
+        let player = &mut self.players[self.current_player];
+        let stone = *player.get_stone(n)?;
+        Ok(self.queue.is_playable(stone)?)
     }
 
     pub fn determine_start_player(&mut self) {

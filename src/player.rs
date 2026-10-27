@@ -43,7 +43,7 @@ impl Player {
         });
     }
 
-    pub fn propose_stone(&self, n: usize) -> Result<&Stone, PlayerError> {
+    pub fn get_stone(&self, n: usize) -> Result<&Stone, PlayerError> {
         self.stones.get(n).ok_or(PlayerError::NoSuchStone)
     }
 
@@ -63,7 +63,9 @@ impl Player {
     }
 
     pub fn can_play_stone(&self, queue: &Queue) -> bool {
-        self.stones.iter().any(|stone| queue.is_playable(stone))
+        self.stones
+            .iter()
+            .any(|stone| queue.is_playable(*stone).is_ok())
     }
 
     pub fn has_no_stones_left(&self) -> bool {

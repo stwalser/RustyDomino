@@ -1,3 +1,3 @@
 # Improvements
 
-- Winning message
+- Add point counting scheme
