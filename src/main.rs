@@ -28,7 +28,7 @@ fn main() -> io::Result<()> {
             println!("Please enter a number! ");
             continue;
         };
-        if n < 2 || n > 4 {
+        if !(2..=4).contains(&n) {
             execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
             println!("{} players are not supported! ", n);
             continue;

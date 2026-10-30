@@ -156,7 +156,7 @@ impl Game {
 
     pub fn check_for_points(&mut self) {
         let open_end_sum = self.queue.open_end_sum();
-        if open_end_sum % DIVISOR == 0 {
+        if open_end_sum.is_multiple_of(DIVISOR) {
             self.get_current_player_mut()
                 .add_points(open_end_sum / DIVISOR);
         }
