@@ -64,8 +64,4 @@ impl PlayedStone {
     pub fn get_right(&self) -> u8 {
         self.right
     }
-
-    pub fn is_double(&self) -> bool {
-        self.left == self.right
-    }
 }

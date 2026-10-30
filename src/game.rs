@@ -91,6 +91,10 @@ impl Game {
         &self.players[self.current_player]
     }
 
+    fn get_current_player_mut(&mut self) -> &mut Player {
+        &mut self.players[self.current_player]
+    }
+
     pub fn print_round_greeting(&self) {
         println!(
             "It's your turn {}. Press 'enter' when you're ready.",
@@ -111,7 +115,38 @@ impl Game {
     }
 
     pub fn current_player_won(&self) -> bool {
-        self.get_current_player().has_no_stones_left()
+        self.get_current_player().get_n_stones() == 0
+    }
+
+    pub fn add_bonus_points(&mut self) {
+        let points = self
+            .players
+            .iter()
+            .map(|player| {
+                if player != self.get_current_player() {
+                    player.get_n_stones()
+                } else {
+                    0
+                }
+            })
+            .sum::<usize>();
+        self.get_current_player_mut().add_points(points as u8);
+    }
+
+    pub fn print_points(&self) {
+        println!("Congratulations {}! You won!", self.get_current_player());
+        println!("Points");
+        for player in &self.players {
+            println!("{} - {}", player.get_points(), player)
+        }
+    }
+
+    pub fn check_for_points(&mut self) {
+        let open_end_sum = self.queue.open_end_sum();
+        if open_end_sum % DIVISOR == 0 {
+            self.get_current_player_mut()
+                .add_points(open_end_sum / DIVISOR);
+        }
     }
 
     fn shuffled_stones() -> Vec<Stone> {

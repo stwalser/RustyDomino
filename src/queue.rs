@@ -93,6 +93,10 @@ impl Queue {
     pub fn set_expected_start_stone(&mut self, stone: Stone) {
         self.expected_start_stone = stone.into();
     }
+
+    pub fn open_end_sum(&self) -> u8 {
+        self.stones.front().unwrap().get_left() + self.stones.back().unwrap().get_right()
+    }
 }
 
 impl Display for Queue {

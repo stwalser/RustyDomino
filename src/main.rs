@@ -59,7 +59,8 @@ fn main() -> io::Result<()> {
         print_current_round(&mut game)?;
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
         if game.current_player_won() {
-            println!("Congratulations!!! You won!!!");
+            game.add_bonus_points();
+            game.print_points();
             break;
         } else {
             game.next_player();
@@ -107,7 +108,7 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
                 last_round_feedback = "Enter a number to choose a stone! ".to_string();
                 continue;
             };
-            
+
             let mut playable = match game.check_stone(n - 1) {
                 Ok(p) => p,
                 Err(e) => {
@@ -117,9 +118,7 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
             };
 
             if playable == Playable::Both {
-                println!(
-                    "Do you want to play the stone on the (l)eft or the (r)ight side?"
-                );
+                println!("Do you want to play the stone on the (l)eft or the (r)ight side?");
                 let pressed = wait_for_press_of(vec![Char('l'), Char('r')])?;
                 if pressed == Char('l') {
                     playable = Playable::Left;
@@ -129,7 +128,10 @@ fn print_current_round(game: &mut Game) -> io::Result<()> {
             }
 
             match game.play_stone(n - 1, playable) {
-                Ok(_) => break,
+                Ok(_) => {
+                    game.check_for_points();
+                    break;
+                }
                 Err(e) => {
                     last_round_feedback = e.to_string();
                 }

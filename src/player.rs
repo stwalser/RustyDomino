@@ -11,10 +11,11 @@ pub enum PlayerError {
     NoSuchStone,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Player {
     name: String,
     stones: Vec<Stone>,
+    points: u8,
 }
 
 impl Player {
@@ -22,6 +23,7 @@ impl Player {
         Self {
             name,
             stones: Vec::new(),
+            points: 0,
         }
     }
 
@@ -68,8 +70,16 @@ impl Player {
             .any(|stone| queue.is_playable(*stone).is_ok())
     }
 
-    pub fn has_no_stones_left(&self) -> bool {
-        self.stones.is_empty()
+    pub fn get_n_stones(&self) -> usize {
+        self.stones.len()
+    }
+
+    pub fn add_points(&mut self, points: u8) {
+        self.points += points
+    }
+
+    pub fn get_points(&self) -> u8 {
+        self.points
     }
 }
 
