@@ -47,25 +47,37 @@ fn main() -> io::Result<()> {
         .collect::<Vec<Player>>();
 
     let mut game = Game::new(players);
-    game.init_players_stones();
 
-    game.determine_start_player();
-
-    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     loop {
-        game.print_round_greeting();
-        wait_for_press_of(vec![Enter])?;
+        game.init_players_stones();
+
+        game.determine_start_player();
+
         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-        print_current_round(&mut game)?;
-        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-        if game.current_player_won() {
-            game.add_bonus_points();
-            game.print_points();
+        loop {
+            game.print_round_greeting();
+            wait_for_press_of(vec![Enter])?;
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+            print_current_round(&mut game)?;
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+            if game.current_player_won() {
+                game.add_bonus_points();
+                game.print_points();
+                break;
+            } else {
+                game.next_player();
+            }
+        }
+
+        println!("Do you want to play another round? (y)es/(n)o");
+        let pressed = wait_for_press_of(vec![Char('y'), Char('n')])?;
+        if pressed == Char('y') {
+            continue;
+        } else if pressed == Char('n') {
             break;
-        } else {
-            game.next_player();
         }
     }
+
     Ok(())
 }
 

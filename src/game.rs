@@ -134,10 +134,23 @@ impl Game {
     }
 
     pub fn print_points(&self) {
-        println!("Congratulations {}! You won!", self.get_current_player());
-        println!("Points");
+        println!(
+            "Congratulations {}! You won this round!",
+            self.get_current_player()
+        );
+        println!("Total Points");
         for player in &self.players {
             println!("{} - {}", player.get_points(), player)
+        }
+        match self.players.iter().max_by_key(|player| player.get_points()) {
+            Some(leader) => {
+                println!("Overall leader: {}", leader);
+            }
+            None => {
+                println!(
+                    "There is no leader right now. Multiple players have the same number of points."
+                )
+            }
         }
     }
 
