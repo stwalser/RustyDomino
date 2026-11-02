@@ -1,20 +1,11 @@
-use crate::player::{Player, PlayerError};
-use crate::queue::{Playable, Queue, QueueError};
+use crate::player::Player;
+use crate::queue::{Queue, Side};
 use crate::stone::Stone;
 use rand::seq::SliceRandom;
-use thiserror::Error;
 
 const HIGHEST_NUMBER: u8 = 6;
 const DIVISOR: u8 = 3;
 static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
-
-#[derive(Debug, Error)]
-pub enum GameError {
-    #[error(transparent)]
-    Queue(#[from] QueueError),
-    #[error(transparent)]
-    Player(#[from] PlayerError),
-}
 
 pub struct Game {
     queue: Queue,
@@ -28,9 +19,13 @@ impl Game {
         Self {
             queue: Queue::new(),
             talon: Self::shuffled_stones(),
-            players: players.clone(),
+            players,
             current_player: 0,
         }
+    }
+
+    pub fn refill_talon(&mut self) {
+        self.talon = Self::shuffled_stones()
     }
 
     pub fn init_players_stones(&mut self) {
@@ -45,25 +40,19 @@ impl Game {
     }
 
     pub fn draw_for_current_player(&mut self) {
-        self.players[self.current_player].assign_new_stone(self.talon.pop().unwrap())
+        self.get_current_player()
+            .ask_player_to_draw(self.get_queue_string());
+        let new_stone = self.talon.pop().unwrap();
+        self.get_current_player_mut().assign_new_stone(new_stone);
     }
 
-    pub fn print_board(&self) {
-        println!("{}", self.queue);
+    pub fn get_queue_string(&self) -> String {
+        self.queue.to_string()
     }
 
-    pub fn play_stone(&mut self, n: usize, playable: Playable) -> Result<(), GameError> {
-        let player = &mut self.players[self.current_player];
-        let stone = *player.get_stone(n)?;
-        self.queue.add(stone, playable)?; // anderes Feld, kein Konflikt
-        player.remove_stone(n); // nur bei Erfolg
-        Ok(())
-    }
-
-    pub fn check_stone(&mut self, n: usize) -> Result<Playable, GameError> {
-        let player = &mut self.players[self.current_player];
-        let stone = *player.get_stone(n)?;
-        Ok(self.queue.is_playable(stone)?)
+    pub fn play_stone(&mut self, stone: Stone, side: Side) {
+        self.queue.add(stone, side);
+        self.get_current_player_mut().remove_stone(stone);
     }
 
     pub fn determine_start_player(&mut self) {
@@ -95,15 +84,45 @@ impl Game {
         &mut self.players[self.current_player]
     }
 
-    pub fn print_round_greeting(&self) {
-        println!(
-            "It's your turn {}. Press 'enter' when you're ready.",
-            self.get_current_player()
-        );
+    pub fn handle_move(&mut self) {
+        let mut hint = None;
+        self.get_current_player().ask_if_ready();
+        loop {
+            if self.current_player_can_make_a_move() {
+                loop {
+                    let stone = self
+                        .get_current_player()
+                        .ask_for_stone(self.get_queue_string(), hint.clone());
+                    let playable = match self.queue.is_playable(stone) {
+                        Ok(p) => p,
+                        Err(error) => {
+                            hint = error.to_string().into();
+                            continue;
+                        }
+                    };
+                    let side = match Side::try_from(playable) {
+                        Ok(s) => s,
+                        Err(_) => self.get_current_player().ask_for_side(),
+                    };
+                    self.play_stone(stone, side);
+                    self.get_current_player().report_stone_played(stone);
+                    self.check_for_points();
+                    break;
+                }
+            } else if self.talon_not_empty() {
+                self.draw_for_current_player();
+                hint = "Now you can make a move".to_string().into();
+                continue;
+            } else {
+                self.no_move_possible()
+            }
+            break;
+        }
     }
 
-    pub fn print_current_player_stones(&self) {
-        self.get_current_player().print_stones();
+    pub fn no_move_possible(&self) {
+        self.get_current_player()
+            .ask_for_no_move_possible_confirmation(self.get_queue_string());
     }
 
     pub fn current_player_can_make_a_move(&self) -> bool {
@@ -123,7 +142,7 @@ impl Game {
             .players
             .iter()
             .map(|player| {
-                if player != self.get_current_player() {
+                if player.get_name() != self.get_current_player().get_name() {
                     player.get_n_stones()
                 } else {
                     0
@@ -168,5 +187,13 @@ impl Game {
             .collect();
         stones.shuffle(&mut rand::rng());
         stones
+    }
+}
+
+impl Drop for Game {
+    fn drop(&mut self) {
+        for player in &self.players {
+            player.stop_game()
+        }
     }
 }

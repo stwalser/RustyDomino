@@ -1,4 +1,5 @@
-use crate::queue::QueueError::{MoveNotPossibleError, StoneCannotBeAdded};
+use crate::queue::QueueError::MoveNotPossibleError;
+use crate::queue::Side::{Left, Right};
 use crate::stone::{PlayedStone, Stone};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
@@ -14,8 +15,6 @@ pub enum QueueError {
         "You need to play your highest double first! If you don't have a double, the stone with the highest dot sum! "
     )]
     HighestDouble,
-    #[error("Adding a stone on both sides or not at all is not possible! ")]
-    StoneCannotBeAdded,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,6 +22,28 @@ pub enum Playable {
     Left,
     Right,
     Both,
+}
+
+#[derive(Error, Debug)]
+#[error("This value cannot be converted to a Side")]
+pub struct SideConversionError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Side {
+    Left,
+    Right,
+}
+
+impl TryFrom<Playable> for Side {
+    type Error = SideConversionError;
+
+    fn try_from(value: Playable) -> Result<Self, Self::Error> {
+        match value {
+            Playable::Left => Ok(Left),
+            Playable::Right => Ok(Right),
+            Playable::Both => Err(SideConversionError {}),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -39,27 +60,21 @@ impl Queue {
         }
     }
 
-    pub fn add(&mut self, stone: Stone, playable: Playable) -> Result<(), QueueError> {
+    pub fn add(&mut self, stone: Stone, side: Side) {
         if self.stones.is_empty() {
             let dots = stone.get_dots();
             self.stones
                 .push_back(stone.into_played_stone_by_right(dots[0])); // it is a double. It doesn't matter
-            Ok(())
         } else {
-            match playable {
-                Playable::Left => {
+            match side {
+                Side::Left => {
                     let right = self.stones.front().unwrap().get_left();
                     self.stones
                         .push_front(stone.into_played_stone_by_right(right));
-                    Ok(())
                 }
-                Playable::Right => {
+                Side::Right => {
                     let left = self.stones.back().unwrap().get_right();
                     self.stones.push_back(stone.into_played_stone_by_left(left));
-                    Ok(())
-                }
-                _ => {
-                    panic!("{}", StoneCannotBeAdded)
                 }
             }
         }
