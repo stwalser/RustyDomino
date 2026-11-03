@@ -151,6 +151,10 @@ impl Player {
     pub fn get_name(&self) -> &str {
         self.name.as_str()
     }
+
+    pub fn get_remaining_dot_sum(&self) -> u8 {
+        self.stones.iter().map(|stone| stone.dot_sum()).sum()
+    }
 }
 
 impl Display for Player {

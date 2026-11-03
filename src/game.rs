@@ -143,13 +143,13 @@ impl Game {
             .iter()
             .map(|player| {
                 if player.get_name() != self.get_current_player().get_name() {
-                    player.get_n_stones()
+                    player.get_remaining_dot_sum()
                 } else {
                     0
                 }
             })
-            .sum::<usize>();
-        self.get_current_player_mut().add_points(points as u8);
+            .sum::<u8>();
+        self.get_current_player_mut().add_points(points);
     }
 
     pub fn print_points(&self) {
