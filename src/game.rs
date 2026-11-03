@@ -1,13 +1,27 @@
 use crate::player::Player;
 use crate::queue::{Queue, Side};
 use crate::stone::Stone;
+use crossterm::cursor::RestorePosition;
+use crossterm::execute;
+use crossterm::terminal::Clear;
+use crossterm::terminal::ClearType::FromCursorDown;
 use rand::seq::SliceRandom;
+use std::io;
+use crossterm::event::KeyCode::Enter;
+use crate::utils::wait_for_press_of;
 
 const HIGHEST_NUMBER: u8 = 6;
 const DIVISOR: u8 = 3;
 static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
 
+pub enum GameMode {
+    Rounds(u32),
+    Points(u32),
+}
+
 pub struct Game {
+    game_mode: GameMode,
+    counter: u32,
     queue: Queue,
     talon: Vec<Stone>,
     players: Vec<Player>,
@@ -15,8 +29,10 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(players: Vec<Player>) -> Self {
+    pub fn new(players: Vec<Player>, game_mode: GameMode) -> Self {
         Self {
+            game_mode,
+            counter: 0,
             queue: Queue::new(),
             talon: Self::shuffled_stones(),
             players,
@@ -24,8 +40,10 @@ impl Game {
         }
     }
 
-    pub fn refill_talon(&mut self) {
-        self.talon = Self::shuffled_stones()
+    pub fn reset_game(&mut self) {
+        self.talon = Self::shuffled_stones();
+        self.queue = Queue::new();
+        self.counter = 0;
     }
 
     pub fn init_players_stones(&mut self) {
@@ -117,20 +135,61 @@ impl Game {
     }
 
     pub fn run(&mut self) {
-        self.init_players_stones();
-        self.determine_start_player();
-
         loop {
-            self.handle_move();
+            self.init_players_stones();
+            self.determine_start_player();
 
-            if self.current_player_won() {
-                self.add_bonus_points();
-                self.print_points();
-                break;
-            } else {
-                self.next_player();
+            loop {
+                self.handle_move();
+
+                if self.current_player().n_of_stones() == 0 {
+                    self.add_bonus_points();
+                    self.print_points();
+                    break;
+                } else {
+                    self.next_player();
+                }
             }
+
+            match self.game_mode {
+                GameMode::Rounds(rounds) => {
+                    self.counter += 1;
+                    if self.counter == rounds {
+                        break;
+                    }
+                    println!("Finished round {}/{}", self.counter, rounds);
+                    println!("Press enter to start next round");
+                    wait_for_press_of(vec![Enter]).unwrap();
+                }
+                GameMode::Points(max_points) => {
+                    self.counter = self
+                        .players
+                        .iter()
+                        .map(|player| player.points())
+                        .max()
+                        .unwrap() as u32;
+                    if self.counter >= max_points {
+                        break;
+                    }
+                    println!("The best player has {}/{} points", self.counter, max_points);
+                    println!("Press enter to start next round");
+                    wait_for_press_of(vec![Enter]).unwrap();
+                }
+            }
+            self.reset_game();
         }
+
+        self.print_final_points();
+    }
+
+    fn print_final_points(&mut self) {
+        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
+        println!("Congratulations to ");
+        for player in self.players_with_most_points() {
+            println!("{}", player);
+        }
+        println!("You won");
+        self.print_total_points();
     }
 
     fn no_move_possible(&self) {
@@ -140,10 +199,6 @@ impl Game {
 
     fn next_player(&mut self) {
         self.current_player = (self.current_player + 1) % self.players.len()
-    }
-
-    fn current_player_won(&self) -> bool {
-        self.current_player().n_of_stones() == 0
     }
 
     fn add_bonus_points(&mut self) {
@@ -162,32 +217,38 @@ impl Game {
     }
 
     fn print_points(&self) {
+        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
         println!(
             "Congratulations {}! You won this round!",
             self.current_player()
         );
+        self.print_total_points();
+    }
+
+    fn print_total_points(&self) {
         println!("Total Points");
         for player in &self.players {
             println!("{} - {}", player.points(), player)
-        }
-        match self.players.iter().max_by_key(|player| player.points()) {
-            Some(leader) => {
-                println!("Overall leader: {}", leader);
-            }
-            None => {
-                println!(
-                    "There is no leader right now. Multiple players have the same number of points."
-                )
-            }
         }
     }
 
     fn check_for_points(&mut self) {
         let open_end_sum = self.queue.open_end_sum();
         if open_end_sum.is_multiple_of(DIVISOR) {
-            self.current_player_mut()
-                .add_points(open_end_sum / DIVISOR);
+            self.current_player_mut().add_points(open_end_sum / DIVISOR);
         }
+    }
+
+    fn players_with_most_points(&self) -> Vec<&Player> {
+        let max = self
+            .players
+            .iter()
+            .max_by_key(|player| player.points())
+            .unwrap();
+        self.players
+            .iter()
+            .filter(|player| player.points() == max.points())
+            .collect()
     }
 
     fn shuffled_stones() -> Vec<Stone> {

@@ -4,12 +4,15 @@ mod player;
 mod protocol;
 mod queue;
 mod stone;
+mod utils;
 
 use crate::client::Client;
-use crate::game::Game;
+use crate::game::{Game, GameMode};
 use crate::player::Player;
 use crate::protocol::{ClientAnswer, GameCommand};
+use crate::utils::{get_int_from_input, wait_for_press_of};
 use crossterm::cursor::{MoveTo, RestorePosition, SavePosition};
+use crossterm::event::KeyCode::Char;
 use crossterm::execute;
 use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
@@ -23,13 +26,7 @@ fn main() -> io::Result<()> {
     println!("Welcome to RustyDomino!");
     let n_players = loop {
         println!("How many people will play (2-4)?");
-        let mut n_players_string = String::new();
-        io::stdin().read_line(&mut n_players_string)?;
-        let Ok(n) = n_players_string.trim().parse::<usize>() else {
-            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-            println!("Please enter a number! ");
-            continue;
-        };
+        let n = get_int_from_input();
         if !(2..=4).contains(&n) {
             execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
             println!("{} players are not supported! ", n);
@@ -55,13 +52,29 @@ fn main() -> io::Result<()> {
         })
         .unzip();
 
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+    println!("Which mode do you want to play?");
+    println!("1) Fixed number of rounds");
+    println!("2) Fixed number of points");
+    let mode = match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => {
+            println!("How many rounds do you want to play?");
+            GameMode::Rounds(get_int_from_input())
+        }
+        Char('2') => {
+            println!("Until many points do you want to play?");
+            GameMode::Points(get_int_from_input())
+        }
+        _ => unreachable!(),
+    };
+
     for mut client in clients {
         std::thread::spawn(move || {
             client.run();
         });
     }
 
-    Game::new(players).run();
+    Game::new(players, mode).run();
 
     Ok(())
 }

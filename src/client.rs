@@ -3,12 +3,12 @@ use crate::queue::Side;
 use crate::stone::Stone;
 use crossterm::cursor::RestorePosition;
 use crossterm::event::KeyCode::{Char, Enter};
-use crossterm::event::{Event, KeyCode, read};
 use crossterm::execute;
 use crossterm::terminal::ClearType::FromCursorDown;
-use crossterm::terminal::{Clear, disable_raw_mode, enable_raw_mode};
+use crossterm::terminal::Clear;
 use std::io;
 use std::sync::mpsc::{Receiver, SyncSender};
+use crate::utils::{get_int_from_input, wait_for_press_of};
 
 #[derive(Debug)]
 pub struct Client {
@@ -16,25 +16,6 @@ pub struct Client {
     answer_sender: SyncSender<ClientAnswer>,
     stones: Vec<Stone>,
     name: String,
-}
-
-fn wait_for_press_of(key_codes: Vec<KeyCode>) -> io::Result<KeyCode> {
-    enable_raw_mode()?;
-    loop {
-        match read()? {
-            Event::FocusGained => {}
-            Event::FocusLost => {}
-            Event::Key(key) => {
-                if key_codes.contains(&key.code) {
-                    disable_raw_mode()?;
-                    return Ok(key.code);
-                }
-            }
-            Event::Mouse(_) => {}
-            Event::Paste(_) => {}
-            Event::Resize(_, _) => {}
-        }
-    }
 }
 
 impl Client {
@@ -88,14 +69,7 @@ impl Client {
                         self.stones.iter().enumerate().for_each(|(index, stone)| {
                             println!("{}: {}", index + 1, stone);
                         });
-                        let mut input_string = String::new();
-                        println!("Which stone do you want to play?");
-                        io::stdin().read_line(&mut input_string).unwrap();
-                        let input = input_string.trim().to_string();
-                        let Ok(n) = input.parse::<usize>() else {
-                            input_feedback = "Enter a number to choose a stone! ".to_string();
-                            continue;
-                        };
+                        let n: usize = get_int_from_input();
                         if !self.stone_exists(n - 1) {
                             input_feedback = "You don't have that many stones".to_string();
                             continue;
