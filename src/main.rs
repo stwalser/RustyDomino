@@ -61,24 +61,7 @@ fn main() -> io::Result<()> {
         });
     }
 
-    let mut game = Game::new(players);
-
-    game.init_players_stones();
-
-    game.determine_start_player();
-
-    loop {
-        game.handle_move();
-
-        execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-        if game.current_player_won() {
-            game.add_bonus_points();
-            game.print_points();
-            break;
-        } else {
-            game.next_player();
-        }
-    }
+    Game::new(players).run();
 
     Ok(())
 }

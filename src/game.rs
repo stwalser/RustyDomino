@@ -35,27 +35,23 @@ impl Game {
         }
     }
 
-    pub fn talon_not_empty(&self) -> bool {
-        !self.talon.is_empty()
-    }
-
-    pub fn draw_for_current_player(&mut self) {
+    fn draw_for_current_player(&mut self) {
         self.current_player()
             .ask_player_to_draw(self.queue_string());
         let new_stone = self.talon.pop().unwrap();
         self.current_player_mut().assign_new_stone(new_stone);
     }
 
-    pub fn queue_string(&self) -> String {
+    fn queue_string(&self) -> String {
         self.queue.to_string()
     }
 
-    pub fn play_stone(&mut self, stone: Stone, side: Side) {
+    fn play_stone(&mut self, stone: Stone, side: Side) {
         self.queue.add(stone, side);
         self.current_player_mut().remove_stone(stone);
     }
 
-    pub fn determine_start_player(&mut self) {
+    fn determine_start_player(&mut self) {
         let (start_player, start_stone) = self
             .players
             .iter()
@@ -84,11 +80,11 @@ impl Game {
         &mut self.players[self.current_player]
     }
 
-    pub fn handle_move(&mut self) {
+    fn handle_move(&mut self) {
         let mut hint = None;
         self.current_player().ask_if_ready();
         loop {
-            if self.current_player_can_make_a_move() {
+            if self.current_player().can_play_stone(&self.queue) {
                 loop {
                     let stone = self
                         .current_player()
@@ -109,7 +105,7 @@ impl Game {
                     self.check_for_points();
                     break;
                 }
-            } else if self.talon_not_empty() {
+            } else if !self.talon.is_empty() {
                 self.draw_for_current_player();
                 hint = "Now you can make a move".to_string().into();
                 continue;
@@ -120,24 +116,37 @@ impl Game {
         }
     }
 
-    pub fn no_move_possible(&self) {
+    pub fn run(&mut self) {
+        self.init_players_stones();
+        self.determine_start_player();
+
+        loop {
+            self.handle_move();
+
+            if self.current_player_won() {
+                self.add_bonus_points();
+                self.print_points();
+                break;
+            } else {
+                self.next_player();
+            }
+        }
+    }
+
+    fn no_move_possible(&self) {
         self.current_player()
             .ask_for_no_move_possible_confirmation(self.queue_string());
     }
 
-    pub fn current_player_can_make_a_move(&self) -> bool {
-        self.current_player().can_play_stone(&self.queue)
-    }
-
-    pub fn next_player(&mut self) {
+    fn next_player(&mut self) {
         self.current_player = (self.current_player + 1) % self.players.len()
     }
 
-    pub fn current_player_won(&self) -> bool {
+    fn current_player_won(&self) -> bool {
         self.current_player().n_of_stones() == 0
     }
 
-    pub fn add_bonus_points(&mut self) {
+    fn add_bonus_points(&mut self) {
         let points = self
             .players
             .iter()
@@ -152,7 +161,7 @@ impl Game {
         self.current_player_mut().add_points(points);
     }
 
-    pub fn print_points(&self) {
+    fn print_points(&self) {
         println!(
             "Congratulations {}! You won this round!",
             self.current_player()
@@ -173,7 +182,7 @@ impl Game {
         }
     }
 
-    pub fn check_for_points(&mut self) {
+    fn check_for_points(&mut self) {
         let open_end_sum = self.queue.open_end_sum();
         if open_end_sum.is_multiple_of(DIVISOR) {
             self.current_player_mut()
