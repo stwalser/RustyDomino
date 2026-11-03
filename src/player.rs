@@ -29,18 +29,12 @@ impl Player {
     }
 
     pub fn assign_initial_stones(&mut self, stones: Vec<Stone>) {
-        self.command_sender
-            .send(GameCommand::InitialStones(stones.clone()))
-            .unwrap();
-        let ClientAnswer::InitialStonesReceived = self.answer_receiver.recv().unwrap() else {
-            panic!("The client is going havoc!");
-        };
         self.stones = stones;
     }
 
     pub fn ask_if_ready(&self) {
         self.command_sender
-            .send(GameCommand::CheckIfPlayerReady)
+            .send(GameCommand::CheckIfPlayerReady(self.name.clone()))
             .unwrap();
         let ClientAnswer::PlayerReady = self.answer_receiver.recv().unwrap() else {
             panic!("The client is going havoc!")
@@ -49,7 +43,7 @@ impl Player {
 
     pub fn ask_for_stone(&self, queue: String, hint: Option<String>) -> Stone {
         self.command_sender
-            .send(GameCommand::MakeAMove(queue, hint))
+            .send(GameCommand::MakeAMove(queue, hint, self.stones.clone()))
             .unwrap();
         let ClientAnswer::PlayStone(stone) = self.answer_receiver.recv().unwrap() else {
             panic!("The client is going havoc!")
@@ -65,18 +59,9 @@ impl Player {
         side
     }
 
-    pub fn report_stone_played(&self, stone: Stone) {
-        self.command_sender
-            .send(GameCommand::StoneAccepted(stone))
-            .unwrap();
-        let ClientAnswer::StoneRemoved = self.answer_receiver.recv().unwrap() else {
-            panic!("The client is going havoc!")
-        };
-    }
-
     pub fn ask_player_to_draw(&self, queue: String) {
         self.command_sender
-            .send(GameCommand::DrawAStone(queue))
+            .send(GameCommand::DrawAStone(queue, self.stones.clone()))
             .unwrap();
         let ClientAnswer::DrawStone = self.answer_receiver.recv().unwrap() else {
             panic!("The client is going havoc!")
@@ -85,7 +70,7 @@ impl Player {
 
     pub fn ask_for_no_move_possible_confirmation(&self, queue: String) {
         self.command_sender
-            .send(GameCommand::NoMovePossible(queue))
+            .send(GameCommand::NoMovePossible(queue, self.stones.clone()))
             .unwrap();
         let ClientAnswer::NoMoveAccepted = self.answer_receiver.recv().unwrap() else {
             panic!("The client is going havoc!")
@@ -98,12 +83,6 @@ impl Player {
 
     pub fn assign_new_stone(&mut self, stone: Stone) {
         self.stones.push(stone);
-        self.command_sender
-            .send(GameCommand::NewStone(stone))
-            .unwrap();
-        let ClientAnswer::StoneAdded = self.answer_receiver.recv().unwrap() else {
-            panic!("The client is going havoc")
-        };
     }
 
     pub fn remove_stone(&mut self, stone: Stone) {

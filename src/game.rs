@@ -119,7 +119,6 @@ impl Game {
                         Err(_) => self.current_player().ask_for_side(),
                     };
                     self.play_stone(stone, side);
-                    self.current_player().report_stone_played(stone);
                     self.check_for_points();
                     break;
                 }

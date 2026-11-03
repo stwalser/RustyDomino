@@ -46,7 +46,7 @@ fn main() -> io::Result<()> {
             let (ans_tx, ans_rx) = sync_channel::<ClientAnswer>(0);
             let name = name_string.trim();
             (
-                Client::new(cmd_rx, ans_tx, vec![], name.to_string()),
+                Client::new(cmd_rx, ans_tx),
                 Player::new(name.to_string(), cmd_tx, ans_rx),
             )
         })

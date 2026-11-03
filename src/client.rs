@@ -1,40 +1,29 @@
 use crate::protocol::{ClientAnswer, GameCommand};
 use crate::queue::Side;
-use crate::stone::Stone;
+use crate::utils::{get_int_from_input, wait_for_press_of};
 use crossterm::cursor::RestorePosition;
 use crossterm::event::KeyCode::{Char, Enter};
 use crossterm::execute;
-use crossterm::terminal::ClearType::FromCursorDown;
 use crossterm::terminal::Clear;
+use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 use std::sync::mpsc::{Receiver, SyncSender};
-use crate::utils::{get_int_from_input, wait_for_press_of};
 
 #[derive(Debug)]
 pub struct Client {
     command_receiver: Receiver<GameCommand>,
     answer_sender: SyncSender<ClientAnswer>,
-    stones: Vec<Stone>,
-    name: String,
 }
 
 impl Client {
     pub fn new(
         command_receiver: Receiver<GameCommand>,
         answer_sender: SyncSender<ClientAnswer>,
-        stones: Vec<Stone>,
-        name: String,
     ) -> Self {
         Self {
             command_receiver,
             answer_sender,
-            stones,
-            name,
         }
-    }
-
-    pub fn stone_exists(&self, n: usize) -> bool {
-        self.stones.get(n).is_some()
     }
 
     pub fn run(&mut self) {
@@ -45,39 +34,30 @@ impl Client {
                 .expect("The client lost connection to the game. Maybe the game stopped. Exiting");
 
             match command {
-                GameCommand::InitialStones(stones) => {
-                    self.stones = stones;
-                    self.answer_sender
-                        .send(ClientAnswer::InitialStonesReceived)
-                        .unwrap()
-                }
-                GameCommand::CheckIfPlayerReady => {
+                GameCommand::CheckIfPlayerReady(name) => {
                     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
-                    println!(
-                        "It's your turn {}. Press 'enter' when you're ready.",
-                        self.name
-                    );
+                    println!("It's your turn {}. Press 'enter' when you're ready.", name);
                     wait_for_press_of(vec![Enter]).unwrap();
                     self.answer_sender.send(ClientAnswer::PlayerReady).unwrap()
                 }
-                GameCommand::MakeAMove(queue_string, hint) => {
+                GameCommand::MakeAMove(queue_string, hint, stones) => {
                     let mut input_feedback = hint.unwrap_or_default();
                     loop {
                         execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
                         println!("{}", input_feedback);
                         println!("{}", queue_string);
-                        self.stones.iter().enumerate().for_each(|(index, stone)| {
+                        stones.iter().enumerate().for_each(|(index, stone)| {
                             println!("{}: {}", index + 1, stone);
                         });
                         let n: usize = get_int_from_input();
-                        if !self.stone_exists(n - 1) {
+                        if !stones.get(n - 1).is_some() {
                             input_feedback = "You don't have that many stones".to_string();
                             continue;
                         }
                         self.answer_sender
-                            .send(ClientAnswer::PlayStone(self.stones[n - 1]))
+                            .send(ClientAnswer::PlayStone(stones[n - 1]))
                             .unwrap();
-                        break
+                        break;
                     }
                 }
                 GameCommand::ChooseASide => {
@@ -94,19 +74,10 @@ impl Client {
                         .send(ClientAnswer::SideChosen(side))
                         .unwrap();
                 }
-                GameCommand::StoneAccepted(stone) => {
-                    self.stones.remove(
-                        self.stones
-                            .iter()
-                            .position(|x| *x == stone)
-                            .expect("Stone not found in players stones"),
-                    );
-                    self.answer_sender.send(ClientAnswer::StoneRemoved).unwrap();
-                }
-                GameCommand::DrawAStone(queue_string) => {
+                GameCommand::DrawAStone(queue_string, stones) => {
                     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
                     println!("{}", queue_string);
-                    self.stones.iter().enumerate().for_each(|(index, stone)| {
+                    stones.iter().enumerate().for_each(|(index, stone)| {
                         println!("{}: {}", index + 1, stone);
                     });
                     println!(
@@ -115,14 +86,10 @@ impl Client {
                     wait_for_press_of(vec![Char('d')]).unwrap();
                     self.answer_sender.send(ClientAnswer::DrawStone).unwrap();
                 }
-                GameCommand::NewStone(stone) => {
-                    self.stones.push(stone);
-                    self.answer_sender.send(ClientAnswer::StoneAdded).unwrap();
-                }
-                GameCommand::NoMovePossible(queue_string) => {
+                GameCommand::NoMovePossible(queue_string, stones) => {
                     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
                     println!("{}", queue_string);
-                    self.stones.iter().enumerate().for_each(|(index, stone)| {
+                    stones.iter().enumerate().for_each(|(index, stone)| {
                         println!("{}: {}", index + 1, stone);
                     });
                     println!(
