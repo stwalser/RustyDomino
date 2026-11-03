@@ -23,8 +23,8 @@ impl Stone {
         if self.is_double() { Some(self.a) } else { None }
     }
 
-    pub fn dots(&self) -> Vec<u8> {
-        vec![self.a, self.b]
+    pub fn dots(&self) -> [u8; 2] {
+        [self.a, self.b]
     }
 
     pub fn into_played_stone_by_right(self, right: u8) -> PlayedStone {
