@@ -40,19 +40,19 @@ impl Game {
     }
 
     pub fn draw_for_current_player(&mut self) {
-        self.get_current_player()
-            .ask_player_to_draw(self.get_queue_string());
+        self.current_player()
+            .ask_player_to_draw(self.queue_string());
         let new_stone = self.talon.pop().unwrap();
-        self.get_current_player_mut().assign_new_stone(new_stone);
+        self.current_player_mut().assign_new_stone(new_stone);
     }
 
-    pub fn get_queue_string(&self) -> String {
+    pub fn queue_string(&self) -> String {
         self.queue.to_string()
     }
 
     pub fn play_stone(&mut self, stone: Stone, side: Side) {
         self.queue.add(stone, side);
-        self.get_current_player_mut().remove_stone(stone);
+        self.current_player_mut().remove_stone(stone);
     }
 
     pub fn determine_start_player(&mut self) {
@@ -60,14 +60,14 @@ impl Game {
             .players
             .iter()
             .enumerate()
-            .filter_map(|(index, player)| player.get_max_double().map(|stone| (index, stone)))
+            .filter_map(|(index, player)| player.max_double().map(|stone| (index, stone)))
             .max_by_key(|&(_, stone)| stone.double_value())
             .unwrap_or_else(|| {
                 self.players
                     .iter()
                     .enumerate()
                     .filter_map(|(index, player)| {
-                        player.get_max_dot_sum_stone().map(|stone| (index, stone))
+                        player.max_dot_sum_stone().map(|stone| (index, stone))
                     })
                     .max_by_key(|&(_, stone)| stone.dot_sum())
                     .unwrap()
@@ -76,23 +76,23 @@ impl Game {
         self.queue.set_expected_start_stone(*start_stone);
     }
 
-    fn get_current_player(&self) -> &Player {
+    fn current_player(&self) -> &Player {
         &self.players[self.current_player]
     }
 
-    fn get_current_player_mut(&mut self) -> &mut Player {
+    fn current_player_mut(&mut self) -> &mut Player {
         &mut self.players[self.current_player]
     }
 
     pub fn handle_move(&mut self) {
         let mut hint = None;
-        self.get_current_player().ask_if_ready();
+        self.current_player().ask_if_ready();
         loop {
             if self.current_player_can_make_a_move() {
                 loop {
                     let stone = self
-                        .get_current_player()
-                        .ask_for_stone(self.get_queue_string(), hint.clone());
+                        .current_player()
+                        .ask_for_stone(self.queue_string(), hint.clone());
                     let playable = match self.queue.is_playable(stone) {
                         Ok(p) => p,
                         Err(error) => {
@@ -102,10 +102,10 @@ impl Game {
                     };
                     let side = match Side::try_from(playable) {
                         Ok(s) => s,
-                        Err(_) => self.get_current_player().ask_for_side(),
+                        Err(_) => self.current_player().ask_for_side(),
                     };
                     self.play_stone(stone, side);
-                    self.get_current_player().report_stone_played(stone);
+                    self.current_player().report_stone_played(stone);
                     self.check_for_points();
                     break;
                 }
@@ -121,12 +121,12 @@ impl Game {
     }
 
     pub fn no_move_possible(&self) {
-        self.get_current_player()
-            .ask_for_no_move_possible_confirmation(self.get_queue_string());
+        self.current_player()
+            .ask_for_no_move_possible_confirmation(self.queue_string());
     }
 
     pub fn current_player_can_make_a_move(&self) -> bool {
-        self.get_current_player().can_play_stone(&self.queue)
+        self.current_player().can_play_stone(&self.queue)
     }
 
     pub fn next_player(&mut self) {
@@ -134,7 +134,7 @@ impl Game {
     }
 
     pub fn current_player_won(&self) -> bool {
-        self.get_current_player().get_n_stones() == 0
+        self.current_player().n_of_stones() == 0
     }
 
     pub fn add_bonus_points(&mut self) {
@@ -142,26 +142,26 @@ impl Game {
             .players
             .iter()
             .map(|player| {
-                if player.get_name() != self.get_current_player().get_name() {
-                    player.get_remaining_dot_sum()
+                if player.name() != self.current_player().name() {
+                    player.remaining_dot_sum()
                 } else {
                     0
                 }
             })
             .sum::<u8>();
-        self.get_current_player_mut().add_points(points);
+        self.current_player_mut().add_points(points);
     }
 
     pub fn print_points(&self) {
         println!(
             "Congratulations {}! You won this round!",
-            self.get_current_player()
+            self.current_player()
         );
         println!("Total Points");
         for player in &self.players {
-            println!("{} - {}", player.get_points(), player)
+            println!("{} - {}", player.points(), player)
         }
-        match self.players.iter().max_by_key(|player| player.get_points()) {
+        match self.players.iter().max_by_key(|player| player.points()) {
             Some(leader) => {
                 println!("Overall leader: {}", leader);
             }
@@ -176,7 +176,7 @@ impl Game {
     pub fn check_for_points(&mut self) {
         let open_end_sum = self.queue.open_end_sum();
         if open_end_sum.is_multiple_of(DIVISOR) {
-            self.get_current_player_mut()
+            self.current_player_mut()
                 .add_points(open_end_sum / DIVISOR);
         }
     }

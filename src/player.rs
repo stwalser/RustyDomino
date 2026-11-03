@@ -29,13 +29,13 @@ impl Player {
     }
 
     pub fn assign_initial_stones(&mut self, stones: Vec<Stone>) {
-        self.stones = stones.clone();
         self.command_sender
-            .send(GameCommand::InitialStones(stones))
+            .send(GameCommand::InitialStones(stones.clone()))
             .unwrap();
         let ClientAnswer::InitialStonesReceived = self.answer_receiver.recv().unwrap() else {
             panic!("The client is going havoc!");
         };
+        self.stones = stones;
     }
 
     pub fn ask_if_ready(&self) {
@@ -115,14 +115,14 @@ impl Player {
         );
     }
 
-    pub fn get_max_double(&self) -> Option<&Stone> {
+    pub fn max_double(&self) -> Option<&Stone> {
         self.stones
             .iter()
             .filter(|stone| stone.is_double())
             .max_by_key(|stone| stone.double_value())
     }
 
-    pub fn get_max_dot_sum_stone(&self) -> Option<&Stone> {
+    pub fn max_dot_sum_stone(&self) -> Option<&Stone> {
         self.stones
             .iter()
             .map(|stone| (stone, stone.dot_sum()))
@@ -136,7 +136,7 @@ impl Player {
             .any(|stone| queue.is_playable(*stone).is_ok())
     }
 
-    pub fn get_n_stones(&self) -> usize {
+    pub fn n_of_stones(&self) -> usize {
         self.stones.len()
     }
 
@@ -144,15 +144,15 @@ impl Player {
         self.points += points
     }
 
-    pub fn get_points(&self) -> u8 {
+    pub fn points(&self) -> u8 {
         self.points
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    pub fn get_remaining_dot_sum(&self) -> u8 {
+    pub fn remaining_dot_sum(&self) -> u8 {
         self.stones.iter().map(|stone| stone.dot_sum()).sum()
     }
 }

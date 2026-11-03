@@ -23,7 +23,7 @@ impl Stone {
         if self.is_double() { Some(self.a) } else { None }
     }
 
-    pub fn get_dots(&self) -> Vec<u8> {
+    pub fn dots(&self) -> Vec<u8> {
         vec![self.a, self.b]
     }
 
@@ -57,11 +57,11 @@ impl Display for PlayedStone {
 }
 
 impl PlayedStone {
-    pub fn get_left(&self) -> u8 {
+    pub fn left(&self) -> u8 {
         self.left
     }
 
-    pub fn get_right(&self) -> u8 {
+    pub fn right(&self) -> u8 {
         self.right
     }
 }

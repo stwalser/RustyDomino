@@ -62,18 +62,18 @@ impl Queue {
 
     pub fn add(&mut self, stone: Stone, side: Side) {
         if self.stones.is_empty() {
-            let dots = stone.get_dots();
+            let dots = stone.dots();
             self.stones
                 .push_back(stone.into_played_stone_by_right(dots[0])); // it is a double. It doesn't matter
         } else {
             match side {
                 Side::Left => {
-                    let right = self.stones.front().unwrap().get_left();
+                    let right = self.stones.front().unwrap().left();
                     self.stones
                         .push_front(stone.into_played_stone_by_right(right));
                 }
                 Side::Right => {
-                    let left = self.stones.back().unwrap().get_right();
+                    let left = self.stones.back().unwrap().right();
                     self.stones.push_back(stone.into_played_stone_by_left(left));
                 }
             }
@@ -91,11 +91,11 @@ impl Queue {
         }
 
         let can_left = stone
-            .get_dots()
-            .contains(&self.stones.front().unwrap().get_left());
+            .dots()
+            .contains(&self.stones.front().unwrap().left());
         let can_right = stone
-            .get_dots()
-            .contains(&self.stones.back().unwrap().get_right());
+            .dots()
+            .contains(&self.stones.back().unwrap().right());
 
         match (can_left, can_right) {
             (true, true) => Ok(Playable::Both),
@@ -110,7 +110,7 @@ impl Queue {
     }
 
     pub fn open_end_sum(&self) -> u8 {
-        self.stones.front().unwrap().get_left() + self.stones.back().unwrap().get_right()
+        self.stones.front().unwrap().left() + self.stones.back().unwrap().right()
     }
 }
 
