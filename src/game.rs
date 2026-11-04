@@ -1,26 +1,66 @@
 use crate::player::Player;
 use crate::queue::{Queue, Side};
 use crate::stone::Stone;
+use crate::utils::wait_for_press_of;
 use crossterm::cursor::RestorePosition;
+use crossterm::event::KeyCode::Enter;
 use crossterm::execute;
 use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
 use rand::seq::SliceRandom;
 use std::io;
-use crossterm::event::KeyCode::Enter;
-use crate::utils::wait_for_press_of;
 
 const HIGHEST_NUMBER: u8 = 6;
-const DIVISOR: u8 = 3;
-static DICTIONARY: &[(usize, usize)] = &[(2, 7), (3, 6), (4, 6)];
 
 pub enum GameMode {
     Rounds(u32),
     Points(u32),
 }
 
+pub enum System {
+    Double6,
+    Double9,
+}
+
+impl System {
+    pub fn divisor(&self) -> u8 {
+        match self {
+            System::Double6 => 3,
+            System::Double9 => 5,
+        }
+    }
+
+    pub fn n_stones(&self, n_players: usize) -> usize {
+        match self {
+            System::Double6 => match n_players {
+                2 => 7,
+                3 => 7,
+                4 => 5,
+                5 => 4,
+                6 => 4,
+                7 => 3,
+                8 => 3,
+                9 => 2,
+                _ => unreachable!(),
+            },
+            System::Double9 => match n_players {
+                2 => 13,
+                3 => 13,
+                4 => 11,
+                5 => 9,
+                6 => 7,
+                7 => 6,
+                8 => 6,
+                9 => 5,
+                _ => unreachable!(),
+            },
+        }
+    }
+}
+
 pub struct Game {
     game_mode: GameMode,
+    system: System,
     counter: u32,
     queue: Queue,
     talon: Vec<Stone>,
@@ -29,9 +69,10 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(players: Vec<Player>, game_mode: GameMode) -> Self {
+    pub fn new(players: Vec<Player>, game_mode: GameMode, system: System) -> Self {
         Self {
             game_mode,
+            system,
             counter: 0,
             queue: Queue::new(),
             talon: Self::shuffled_stones(),
@@ -47,7 +88,7 @@ impl Game {
     }
 
     pub fn init_players_stones(&mut self) {
-        let n = DICTIONARY[self.players.len() - 2].1;
+        let n = self.system.n_stones(self.players.len());
         for player in &mut self.players {
             player.assign_initial_stones(self.talon.drain(0..n).collect());
         }
@@ -233,8 +274,9 @@ impl Game {
 
     fn check_for_points(&mut self) {
         let open_end_sum = self.queue.open_end_sum();
-        if open_end_sum.is_multiple_of(DIVISOR) {
-            self.current_player_mut().add_points(open_end_sum / DIVISOR);
+        let divisor = self.system.divisor();
+        if open_end_sum.is_multiple_of(divisor) {
+            self.current_player_mut().add_points(open_end_sum / divisor);
         }
     }
 

@@ -7,7 +7,7 @@ mod stone;
 mod utils;
 
 use crate::client::Client;
-use crate::game::{Game, GameMode};
+use crate::game::{Game, GameMode, System};
 use crate::player::Player;
 use crate::protocol::{ClientAnswer, GameCommand};
 use crate::utils::{get_int_from_input, wait_for_press_of};
@@ -53,6 +53,16 @@ fn main() -> io::Result<()> {
         .unzip();
 
     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+    println!("Which system do you want to play?");
+    println!("1) Double 6");
+    println!("2) Double 9");
+    let system = match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => System::Double6,
+        Char('2') => System::Double9,
+        _ => unreachable!(),
+    };
+
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     println!("Which mode do you want to play?");
     println!("1) Fixed number of rounds");
     println!("2) Fixed number of points");
@@ -74,7 +84,7 @@ fn main() -> io::Result<()> {
         });
     }
 
-    Game::new(players, mode).run();
+    Game::new(players, mode, system).run();
 
     Ok(())
 }
