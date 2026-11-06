@@ -1,5 +1,5 @@
-use crate::protocol::{ClientAnswer, GameCommand};
-use crate::queue::Side;
+use crate::common::protocol::{ClientAnswer, GameCommand};
+use crate::kernel::queue::Side;
 use crate::utils::{get_int_from_input, wait_for_press_of};
 use crossterm::cursor::RestorePosition;
 use crossterm::event::KeyCode::{Char, Enter};

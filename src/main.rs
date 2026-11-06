@@ -1,15 +1,12 @@
 mod client;
-mod game;
-mod player;
-mod protocol;
-mod queue;
-mod stone;
+mod common;
+mod kernel;
 mod utils;
 
 use crate::client::Client;
-use crate::game::{Game, GameMode, System};
-use crate::player::Player;
-use crate::protocol::{ClientAnswer, GameCommand};
+use crate::common::protocol::{ClientAnswer, GameCommand};
+use crate::kernel::game::{Game, GameMode, System};
+use crate::kernel::player::Player;
 use crate::utils::{get_int_from_input, wait_for_press_of};
 use crossterm::cursor::{MoveTo, RestorePosition, SavePosition};
 use crossterm::event::KeyCode::Char;

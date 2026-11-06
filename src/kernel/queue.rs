@@ -1,6 +1,6 @@
-use crate::queue::QueueError::MoveNotPossibleError;
-use crate::queue::Side::{Left, Right};
-use crate::stone::{PlayedStone, Stone};
+use crate::common::stone::{PlayedStone, Stone};
+use crate::kernel::queue::QueueError::MoveNotPossibleError;
+use crate::kernel::queue::Side::{Left, Right};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
@@ -90,12 +90,8 @@ impl Queue {
             return Ok(Playable::Left);
         }
 
-        let can_left = stone
-            .dots()
-            .contains(&self.stones.front().unwrap().left());
-        let can_right = stone
-            .dots()
-            .contains(&self.stones.back().unwrap().right());
+        let can_left = stone.dots().contains(&self.stones.front().unwrap().left());
+        let can_right = stone.dots().contains(&self.stones.back().unwrap().right());
 
         match (can_left, can_right) {
             (true, true) => Ok(Playable::Both),

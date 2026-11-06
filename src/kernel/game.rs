@@ -1,6 +1,6 @@
-use crate::player::Player;
-use crate::queue::{Queue, Side};
-use crate::stone::Stone;
+use crate::common::stone::Stone;
+use crate::kernel::player::Player;
+use crate::kernel::queue::{Queue, Side};
 use crate::utils::wait_for_press_of;
 use crossterm::cursor::RestorePosition;
 use crossterm::event::KeyCode::Enter;

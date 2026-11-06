@@ -1,6 +1,6 @@
-use crate::protocol::{ClientAnswer, GameCommand};
-use crate::queue::{Queue, Side};
-use crate::stone::Stone;
+use crate::common::protocol::{ClientAnswer, GameCommand};
+use crate::common::stone::Stone;
+use crate::kernel::queue::{Queue, Side};
 use std::fmt::{Display, Formatter};
 use std::sync::mpsc::{Receiver, SyncSender};
 

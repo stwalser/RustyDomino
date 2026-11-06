@@ -1,5 +1,5 @@
-use crate::queue::Side;
-use crate::stone::Stone;
+use crate::kernel::queue::Side;
+use crate::common::stone::Stone;
 
 #[derive(Debug, PartialEq)]
 pub enum GameCommand {
