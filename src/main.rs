@@ -5,6 +5,7 @@ mod utils;
 
 use crate::client::Client;
 use crate::common::protocol::{ClientAnswer, GameCommand};
+use crate::kernel::communicator::local::Local;
 use crate::kernel::game::{Game, GameMode, System};
 use crate::kernel::player::Player;
 use crate::utils::{get_int_from_input, wait_for_press_of};
@@ -44,7 +45,7 @@ fn main() -> io::Result<()> {
             let name = name_string.trim();
             (
                 Client::new(cmd_rx, ans_tx),
-                Player::new(name.to_string(), cmd_tx, ans_rx),
+                Player::new(name.to_string(), Box::new(Local::new(cmd_tx, ans_rx))),
             )
         })
         .unzip();

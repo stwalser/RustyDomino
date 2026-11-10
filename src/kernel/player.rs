@@ -1,30 +1,29 @@
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::common::stone::Stone;
+use crate::kernel::communicator::Communicator;
 use crate::kernel::queue::{Queue, Side};
 use std::fmt::{Display, Formatter};
-use std::sync::mpsc::{Receiver, SyncSender};
+
+pub enum PlayerMode {
+    Local,
+    Remote
+}
 
 #[derive(Debug)]
 pub struct Player {
     name: String, //TODO: add requirement that it is unique
     stones: Vec<Stone>,
     points: u8,
-    command_sender: SyncSender<GameCommand>,
-    answer_receiver: Receiver<ClientAnswer>,
+    communicator: Box<dyn Communicator>,
 }
 
 impl Player {
-    pub fn new(
-        name: String,
-        command_sender: SyncSender<GameCommand>,
-        answer_receiver: Receiver<ClientAnswer>,
-    ) -> Self {
+    pub fn new(name: String, communicator: Box<dyn Communicator>) -> Self {
         Self {
             name,
             stones: Vec::new(),
             points: 0,
-            command_sender,
-            answer_receiver,
+            communicator,
         }
     }
 
@@ -33,52 +32,54 @@ impl Player {
     }
 
     pub fn ask_if_ready(&self) {
-        self.command_sender
-            .send(GameCommand::CheckIfPlayerReady(self.name.clone()))
-            .unwrap();
-        let ClientAnswer::PlayerReady = self.answer_receiver.recv().unwrap() else {
+        let answer = self
+            .communicator
+            .send_command(GameCommand::CheckIfPlayerReady(self.name.clone()));
+        let ClientAnswer::PlayerReady = answer else {
             panic!("The client is going havoc!")
         };
     }
 
     pub fn ask_for_stone(&self, queue: String, hint: Option<String>) -> Stone {
-        self.command_sender
-            .send(GameCommand::MakeAMove(queue, hint, self.stones.clone()))
-            .unwrap();
-        let ClientAnswer::PlayStone(stone) = self.answer_receiver.recv().unwrap() else {
+        let answer = self.communicator.send_command(GameCommand::MakeAMove(
+            queue,
+            hint,
+            self.stones.clone(),
+        ));
+        let ClientAnswer::PlayStone(stone) = answer else {
             panic!("The client is going havoc!")
         };
         stone
     }
 
     pub fn ask_for_side(&self) -> Side {
-        self.command_sender.send(GameCommand::ChooseASide).unwrap();
-        let ClientAnswer::SideChosen(side) = self.answer_receiver.recv().unwrap() else {
+        let answer = self.communicator.send_command(GameCommand::ChooseASide);
+        let ClientAnswer::SideChosen(side) = answer else {
             panic!("The client is going havoc!")
         };
         side
     }
 
     pub fn ask_player_to_draw(&self, queue: String) {
-        self.command_sender
-            .send(GameCommand::DrawAStone(queue, self.stones.clone()))
-            .unwrap();
-        let ClientAnswer::DrawStone = self.answer_receiver.recv().unwrap() else {
+        let answer = self
+            .communicator
+            .send_command(GameCommand::DrawAStone(queue, self.stones.clone()));
+        let ClientAnswer::DrawStone = answer else {
             panic!("The client is going havoc!")
         };
     }
 
     pub fn ask_for_no_move_possible_confirmation(&self, queue: String) {
-        self.command_sender
-            .send(GameCommand::NoMovePossible(queue, self.stones.clone()))
-            .unwrap();
-        let ClientAnswer::NoMoveAccepted = self.answer_receiver.recv().unwrap() else {
+        let answer = self
+            .communicator
+            .send_command(GameCommand::NoMovePossible(queue, self.stones.clone()));
+        let ClientAnswer::NoMoveAccepted = answer else {
             panic!("The client is going havoc!")
         };
     }
 
     pub fn stop_game(&self) {
-        self.command_sender.send(GameCommand::Stop).unwrap()
+        let _ = self.communicator.send_command(GameCommand::Stop);
     }
 
     pub fn assign_new_stone(&mut self, stone: Stone) {
