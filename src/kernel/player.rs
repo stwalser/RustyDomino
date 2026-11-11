@@ -1,24 +1,19 @@
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::common::stone::Stone;
-use crate::kernel::communicator::Communicator;
+use crate::kernel::communicator::Sender;
 use crate::kernel::queue::{Queue, Side};
 use std::fmt::{Display, Formatter};
-
-pub enum PlayerMode {
-    Local,
-    Remote
-}
 
 #[derive(Debug)]
 pub struct Player {
     name: String, //TODO: add requirement that it is unique
     stones: Vec<Stone>,
     points: u8,
-    communicator: Box<dyn Communicator>,
+    communicator: Box<dyn Sender>,
 }
 
 impl Player {
-    pub fn new(name: String, communicator: Box<dyn Communicator>) -> Self {
+    pub fn new(name: String, communicator: Box<dyn Sender>) -> Self {
         Self {
             name,
             stones: Vec::new(),
@@ -36,7 +31,7 @@ impl Player {
             .communicator
             .send_command(GameCommand::CheckIfPlayerReady(self.name.clone()));
         let ClientAnswer::PlayerReady = answer else {
-            panic!("The client is going havoc!")
+            panic!("The clients is going havoc!")
         };
     }
 
@@ -47,7 +42,7 @@ impl Player {
             self.stones.clone(),
         ));
         let ClientAnswer::PlayStone(stone) = answer else {
-            panic!("The client is going havoc!")
+            panic!("The clients is going havoc!")
         };
         stone
     }
@@ -55,7 +50,7 @@ impl Player {
     pub fn ask_for_side(&self) -> Side {
         let answer = self.communicator.send_command(GameCommand::ChooseASide);
         let ClientAnswer::SideChosen(side) = answer else {
-            panic!("The client is going havoc!")
+            panic!("The clients is going havoc!")
         };
         side
     }
@@ -65,7 +60,7 @@ impl Player {
             .communicator
             .send_command(GameCommand::DrawAStone(queue, self.stones.clone()));
         let ClientAnswer::DrawStone = answer else {
-            panic!("The client is going havoc!")
+            panic!("The clients is going havoc!")
         };
     }
 
@@ -74,7 +69,7 @@ impl Player {
             .communicator
             .send_command(GameCommand::NoMovePossible(queue, self.stones.clone()));
         let ClientAnswer::NoMoveAccepted = answer else {
-            panic!("The client is going havoc!")
+            panic!("The clients is going havoc!")
         };
     }
 

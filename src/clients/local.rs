@@ -8,14 +8,15 @@ use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 use std::sync::mpsc::{Receiver, SyncSender};
+use crate::clients::ClientRunner;
 
 #[derive(Debug)]
-pub struct Client {
+pub struct LocalClient {
     command_receiver: Receiver<GameCommand>,
     answer_sender: SyncSender<ClientAnswer>,
 }
 
-impl Client {
+impl LocalClient {
     pub fn new(
         command_receiver: Receiver<GameCommand>,
         answer_sender: SyncSender<ClientAnswer>,
@@ -25,8 +26,10 @@ impl Client {
             answer_sender,
         }
     }
+}
 
-    pub fn run(&mut self) {
+impl ClientRunner for LocalClient {
+    fn run(&mut self) {
         loop {
             let command = self
                 .command_receiver

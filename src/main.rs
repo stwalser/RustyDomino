@@ -1,9 +1,10 @@
-mod client;
+mod clients;
 mod common;
 mod kernel;
 mod utils;
 
-use crate::client::Client;
+use crate::clients::ClientRunner;
+use crate::clients::local::LocalClient;
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::kernel::communicator::local::Local;
 use crate::kernel::game::{Game, GameMode, System};
@@ -22,35 +23,7 @@ fn main() -> io::Result<()> {
     println!("---RustyDomino---");
     execute!(io::stdout(), SavePosition)?;
     println!("Welcome to RustyDomino!");
-    let n_players = loop {
-        println!("How many people will play (2-4)?");
-        let n = get_int_from_input();
-        if !(2..=4).contains(&n) {
-            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-            println!("{} players are not supported! ", n);
-            continue;
-        }
-        break n;
-    };
 
-    let (clients, players): (Vec<Client>, Vec<Player>) = (0..n_players)
-        .map(|id| {
-            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
-            println!("Please enter the name of person {}:", id + 1);
-            let mut name_string = String::new();
-            io::stdin().read_line(&mut name_string).unwrap();
-
-            let (cmd_tx, cmd_rx) = sync_channel::<GameCommand>(0);
-            let (ans_tx, ans_rx) = sync_channel::<ClientAnswer>(0);
-            let name = name_string.trim();
-            (
-                Client::new(cmd_rx, ans_tx),
-                Player::new(name.to_string(), Box::new(Local::new(cmd_tx, ans_rx))),
-            )
-        })
-        .unzip();
-
-    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     println!("Which system do you want to play?");
     println!("1) Double 6");
     println!("2) Double 9");
@@ -76,13 +49,59 @@ fn main() -> io::Result<()> {
         _ => unreachable!(),
     };
 
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+    println!("Which mode do you want to play?");
+    println!("1) Local");
+    println!("2) Remote");
+    match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => local_game(mode, system),
+        Char('2') => remote_game(mode, system),
+        _ => unreachable!(),
+    }
+}
+
+fn local_game(game_mode: GameMode, system: System) -> io::Result<()> {
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+    let n_players = loop {
+        println!("How many people will play (2-4)?");
+        let n = get_int_from_input();
+        if !(2..=4).contains(&n) {
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+            println!("{} players are not supported! ", n);
+            continue;
+        }
+        break n;
+    };
+
+    let (clients, players): (Vec<LocalClient>, Vec<Player>) = (0..n_players)
+        .map(|id| {
+            execute!(io::stdout(), RestorePosition, Clear(FromCursorDown)).unwrap();
+            println!("Please enter the name of person {}:", id + 1);
+            let mut name_string = String::new();
+            io::stdin().read_line(&mut name_string).unwrap();
+            let name = name_string.trim();
+            let (cmd_tx, cmd_rx) = sync_channel::<GameCommand>(0);
+            let (ans_tx, ans_rx) = sync_channel::<ClientAnswer>(0);
+            (
+                LocalClient::new(cmd_rx, ans_tx),
+                Player::new(name.to_string(), Box::new(Local::new(cmd_tx, ans_rx))),
+            )
+        })
+        .unzip();
+
     for mut client in clients {
         std::thread::spawn(move || {
             client.run();
         });
     }
 
-    Game::new(players, mode, system).run();
+    Game::new(players, game_mode, system).run();
+
+    Ok(())
+}
+
+fn remote_game(game_mode: GameMode, system: System) -> io::Result<()> {
+
 
     Ok(())
 }
