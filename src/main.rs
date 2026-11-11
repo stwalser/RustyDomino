@@ -16,6 +16,7 @@ use crossterm::execute;
 use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
+use std::io::Error;
 use std::sync::mpsc::sync_channel;
 
 fn main() -> io::Result<()> {
@@ -24,15 +25,17 @@ fn main() -> io::Result<()> {
     execute!(io::stdout(), SavePosition)?;
     println!("Welcome to RustyDomino!");
 
-    println!("Which system do you want to play?");
-    println!("1) Double 6");
-    println!("2) Double 9");
-    let system = match wait_for_press_of(vec![Char('1'), Char('2')])? {
-        Char('1') => System::Double6,
-        Char('2') => System::Double9,
+    println!("Which mode do you want to play?");
+    println!("1) Local");
+    println!("2) Remote");
+    match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => local_game(),
+        Char('2') => remote_game(),
         _ => unreachable!(),
-    };
+    }
+}
 
+fn ask_for_game_mode() -> Result<GameMode, Error> {
     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     println!("Which mode do you want to play?");
     println!("1) Fixed number of rounds");
@@ -48,19 +51,27 @@ fn main() -> io::Result<()> {
         }
         _ => unreachable!(),
     };
-
-    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
-    println!("Which mode do you want to play?");
-    println!("1) Local");
-    println!("2) Remote");
-    match wait_for_press_of(vec![Char('1'), Char('2')])? {
-        Char('1') => local_game(mode, system),
-        Char('2') => remote_game(mode, system),
-        _ => unreachable!(),
-    }
+    Ok(mode)
 }
 
-fn local_game(game_mode: GameMode, system: System) -> io::Result<()> {
+fn ask_for_system() -> Result<System, Error> {
+    execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
+    println!("Which system do you want to play?");
+    println!("1) Double 6");
+    println!("2) Double 9");
+    let system = match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => System::Double6,
+        Char('2') => System::Double9,
+        _ => unreachable!(),
+    };
+    Ok(system)
+}
+
+fn local_game() -> io::Result<()> {
+    let system = ask_for_system()?;
+
+    let game_mode = ask_for_game_mode()?;
+
     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
     let n_players = loop {
         println!("How many people will play (2-4)?");
@@ -100,8 +111,22 @@ fn local_game(game_mode: GameMode, system: System) -> io::Result<()> {
     Ok(())
 }
 
-fn remote_game(game_mode: GameMode, system: System) -> io::Result<()> {
+fn remote_game() -> io::Result<()> {
+    println!("Do you want to host a game or join an existing game?");
+    println!("1) Local");
+    println!("2) Remote");
+    match wait_for_press_of(vec![Char('1'), Char('2')])? {
+        Char('1') => host_remote_game()?,
+        Char('2') => join_remote_game()?,
+        _ => unreachable!(),
+    }
+    Ok(())
+}
 
+fn host_remote_game() -> io::Result<()> {
+    Ok(())
+}
 
+fn join_remote_game() -> io::Result<()> {
     Ok(())
 }
