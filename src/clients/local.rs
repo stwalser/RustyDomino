@@ -1,3 +1,4 @@
+use crate::clients::ClientRunner;
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::kernel::queue::Side;
 use crate::utils::{get_int_from_input, wait_for_press_of};
@@ -8,7 +9,6 @@ use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
 use std::io;
 use std::sync::mpsc::{Receiver, SyncSender};
-use crate::clients::ClientRunner;
 
 #[derive(Debug)]
 pub struct LocalClient {

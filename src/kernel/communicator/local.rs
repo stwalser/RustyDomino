@@ -1,5 +1,6 @@
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::kernel::communicator::Sender;
+use async_trait::async_trait;
 use std::fmt;
 use std::sync::mpsc::{Receiver, SyncSender};
 
@@ -26,11 +27,10 @@ impl Local {
     }
 }
 
+#[async_trait]
 impl Sender for Local {
-    fn send_command(&self, game_command: GameCommand) -> ClientAnswer {
-        self.command_sender
-            .send(game_command)
-            .unwrap();
+    async fn send_command(&mut self, game_command: GameCommand) -> ClientAnswer {
+        self.command_sender.send(game_command).unwrap();
         self.answer_receiver.recv().unwrap()
     }
 }

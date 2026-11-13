@@ -7,19 +7,25 @@ use crate::clients::ClientRunner;
 use crate::clients::local::LocalClient;
 use crate::common::protocol::{ClientAnswer, GameCommand};
 use crate::kernel::communicator::local::Local;
+use crate::kernel::communicator::remote::Remote;
 use crate::kernel::game::{Game, GameMode, System};
 use crate::kernel::player::Player;
 use crate::utils::{get_int_from_input, wait_for_press_of};
 use crossterm::cursor::{MoveTo, RestorePosition, SavePosition};
-use crossterm::event::KeyCode::Char;
+use crossterm::event::KeyCode::{Char, Enter};
 use crossterm::execute;
 use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType::FromCursorDown;
+use futures_util::StreamExt;
 use std::io;
 use std::io::Error;
 use std::sync::mpsc::sync_channel;
+use tokio::net::TcpListener;
+use tokio_tungstenite::accept_async;
+use tokio_tungstenite::tungstenite::Message;
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     execute!(io::stdout(), MoveTo(0, 0), Clear(FromCursorDown))?;
     println!("---RustyDomino---");
     execute!(io::stdout(), SavePosition)?;
@@ -29,10 +35,11 @@ fn main() -> io::Result<()> {
     println!("1) Local");
     println!("2) Remote");
     match wait_for_press_of(vec![Char('1'), Char('2')])? {
-        Char('1') => local_game(),
-        Char('2') => remote_game(),
+        Char('1') => local_game().await?,
+        Char('2') => remote_game().await?,
         _ => unreachable!(),
     }
+    Ok(())
 }
 
 fn ask_for_game_mode() -> Result<GameMode, Error> {
@@ -67,9 +74,8 @@ fn ask_for_system() -> Result<System, Error> {
     Ok(system)
 }
 
-fn local_game() -> io::Result<()> {
+async fn local_game() -> io::Result<()> {
     let system = ask_for_system()?;
-
     let game_mode = ask_for_game_mode()?;
 
     execute!(io::stdout(), RestorePosition, Clear(FromCursorDown))?;
@@ -106,27 +112,67 @@ fn local_game() -> io::Result<()> {
         });
     }
 
-    Game::new(players, game_mode, system).run();
+    Game::new(players, game_mode, system).run().await;
 
     Ok(())
 }
 
-fn remote_game() -> io::Result<()> {
+async fn remote_game() -> io::Result<()> {
+    execute!(io::stdout(), MoveTo(0, 0), Clear(FromCursorDown))?;
     println!("Do you want to host a game or join an existing game?");
-    println!("1) Local");
-    println!("2) Remote");
+    println!("1) Host");
+    println!("2) Join");
     match wait_for_press_of(vec![Char('1'), Char('2')])? {
-        Char('1') => host_remote_game()?,
-        Char('2') => join_remote_game()?,
+        Char('1') => host_remote_game().await?,
+        Char('2') => join_remote_game().await?,
         _ => unreachable!(),
     }
     Ok(())
 }
 
-fn host_remote_game() -> io::Result<()> {
+async fn host_remote_game() -> io::Result<()> {
+    let system = ask_for_system()?;
+    let game_mode = ask_for_game_mode()?;
+
+    let listener = TcpListener::bind("localhost:45678").await?;
+
+    let mut players: Vec<Player> = vec![];
+
+    loop {
+        execute!(io::stdout(), MoveTo(0, 0), Clear(FromCursorDown))?;
+        println!("Currently connected players");
+        for player in &players {
+            println!("{}", player.name())
+        }
+        println!("Press enter to start the game");
+
+        tokio::select! {
+            res = listener.accept() => {
+                let (stream, _) = res?;
+                let Ok(mut ws) = accept_async(stream).await else { continue };
+                let name = match ws.next().await.unwrap() {
+                    Ok(Message::Text(text)) => {
+                        text.to_string()
+                    }
+                    Ok(_) => continue,
+                    Err(_) => continue,
+                };
+
+                players.push(Player::new(name, Box::new(Remote::new(ws))));
+            }
+            _ = tokio::task::spawn_blocking(move || wait_for_press_of(vec![Enter])) => {
+                break;
+            }
+        }
+    }
+
+    drop(listener);
+
+    Game::new(players, game_mode, system).run().await;
+
     Ok(())
 }
 
-fn join_remote_game() -> io::Result<()> {
+async fn join_remote_game() -> io::Result<()> {
     Ok(())
 }

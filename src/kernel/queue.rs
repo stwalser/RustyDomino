@@ -1,6 +1,7 @@
 use crate::common::stone::{PlayedStone, Stone};
 use crate::kernel::queue::QueueError::MoveNotPossibleError;
 use crate::kernel::queue::Side::{Left, Right};
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
@@ -28,7 +29,7 @@ pub enum Playable {
 #[error("This value cannot be converted to a Side")]
 pub struct SideConversionError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Side {
     Left,
     Right,

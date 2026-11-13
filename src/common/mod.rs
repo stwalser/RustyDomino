@@ -1,2 +1,2 @@
-pub mod stone;
 pub mod protocol;
+pub mod stone;

@@ -94,9 +94,11 @@ impl Game {
         }
     }
 
-    fn draw_for_current_player(&mut self) {
-        self.current_player()
-            .ask_player_to_draw(self.queue_string());
+    async fn draw_for_current_player(&mut self) {
+        let queue_string = self.queue_string();
+        self.current_player_mut()
+            .ask_player_to_draw(queue_string)
+            .await;
         let new_stone = self.talon.pop().unwrap();
         self.current_player_mut().assign_new_stone(new_stone);
     }
@@ -139,15 +141,17 @@ impl Game {
         &mut self.players[self.current_player]
     }
 
-    fn handle_move(&mut self) {
+    async fn handle_move(&mut self) {
         let mut hint = None;
-        self.current_player().ask_if_ready();
+        self.current_player_mut().ask_if_ready().await;
         loop {
             if self.current_player().can_play_stone(&self.queue) {
                 loop {
+                    let queue_string = self.queue_string();
                     let stone = self
-                        .current_player()
-                        .ask_for_stone(self.queue_string(), hint.clone());
+                        .current_player_mut()
+                        .ask_for_stone(queue_string, hint.clone())
+                        .await;
                     let playable = match self.queue.is_playable(stone) {
                         Ok(p) => p,
                         Err(error) => {
@@ -157,30 +161,30 @@ impl Game {
                     };
                     let side = match Side::try_from(playable) {
                         Ok(s) => s,
-                        Err(_) => self.current_player().ask_for_side(),
+                        Err(_) => self.current_player_mut().ask_for_side().await,
                     };
                     self.play_stone(stone, side);
                     self.check_for_points();
                     break;
                 }
             } else if !self.talon.is_empty() {
-                self.draw_for_current_player();
+                self.draw_for_current_player().await;
                 hint = "Now you can make a move".to_string().into();
                 continue;
             } else {
-                self.no_move_possible()
+                self.no_move_possible().await
             }
             break;
         }
     }
 
-    pub fn run(&mut self) {
+    pub async fn run(&mut self) {
         loop {
             self.init_players_stones();
             self.determine_start_player();
 
             loop {
-                self.handle_move();
+                self.handle_move().await;
 
                 if self.current_player().n_of_stones() == 0 {
                     self.add_bonus_points();
@@ -220,6 +224,7 @@ impl Game {
         }
 
         self.print_final_points();
+        self.current_player_mut().stop_game().await;
     }
 
     fn print_final_points(&mut self) {
@@ -232,9 +237,11 @@ impl Game {
         self.print_total_points();
     }
 
-    fn no_move_possible(&self) {
-        self.current_player()
-            .ask_for_no_move_possible_confirmation(self.queue_string());
+    async fn no_move_possible(&mut self) {
+        let queue_string = self.queue_string();
+        self.current_player_mut()
+            .ask_for_no_move_possible_confirmation(queue_string)
+            .await;
     }
 
     fn next_player(&mut self) {
@@ -298,13 +305,5 @@ impl Game {
             .collect();
         stones.shuffle(&mut rand::rng());
         stones
-    }
-}
-
-impl Drop for Game {
-    fn drop(&mut self) {
-        for player in &self.players {
-            player.stop_game()
-        }
     }
 }

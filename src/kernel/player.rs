@@ -26,55 +26,60 @@ impl Player {
         self.stones = stones;
     }
 
-    pub fn ask_if_ready(&self) {
+    pub async fn ask_if_ready(&mut self) {
         let answer = self
             .communicator
-            .send_command(GameCommand::CheckIfPlayerReady(self.name.clone()));
+            .send_command(GameCommand::CheckIfPlayerReady(self.name.clone()))
+            .await;
         let ClientAnswer::PlayerReady = answer else {
             panic!("The clients is going havoc!")
         };
     }
 
-    pub fn ask_for_stone(&self, queue: String, hint: Option<String>) -> Stone {
-        let answer = self.communicator.send_command(GameCommand::MakeAMove(
-            queue,
-            hint,
-            self.stones.clone(),
-        ));
+    pub async fn ask_for_stone(&mut self, queue: String, hint: Option<String>) -> Stone {
+        let answer = self
+            .communicator
+            .send_command(GameCommand::MakeAMove(queue, hint, self.stones.clone()))
+            .await;
         let ClientAnswer::PlayStone(stone) = answer else {
             panic!("The clients is going havoc!")
         };
         stone
     }
 
-    pub fn ask_for_side(&self) -> Side {
-        let answer = self.communicator.send_command(GameCommand::ChooseASide);
+    pub async fn ask_for_side(&mut self) -> Side {
+        let answer = self
+            .communicator
+            .send_command(GameCommand::ChooseASide)
+            .await;
         let ClientAnswer::SideChosen(side) = answer else {
             panic!("The clients is going havoc!")
         };
         side
     }
 
-    pub fn ask_player_to_draw(&self, queue: String) {
+    pub async fn ask_player_to_draw(&mut self, queue: String) {
         let answer = self
             .communicator
-            .send_command(GameCommand::DrawAStone(queue, self.stones.clone()));
+            .send_command(GameCommand::DrawAStone(queue, self.stones.clone()))
+            .await;
         let ClientAnswer::DrawStone = answer else {
             panic!("The clients is going havoc!")
         };
     }
 
-    pub fn ask_for_no_move_possible_confirmation(&self, queue: String) {
+    pub async fn ask_for_no_move_possible_confirmation(&mut self, queue: String) {
         let answer = self
             .communicator
-            .send_command(GameCommand::NoMovePossible(queue, self.stones.clone()));
+            .send_command(GameCommand::NoMovePossible(queue, self.stones.clone()))
+            .await;
         let ClientAnswer::NoMoveAccepted = answer else {
             panic!("The clients is going havoc!")
         };
     }
 
-    pub fn stop_game(&self) {
-        let _ = self.communicator.send_command(GameCommand::Stop);
+    pub async fn stop_game(&mut self) {
+        let _ = self.communicator.send_command(GameCommand::Stop).await;
     }
 
     pub fn assign_new_stone(&mut self, stone: Stone) {
