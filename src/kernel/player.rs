@@ -79,7 +79,7 @@ impl Player {
     }
 
     pub async fn stop_game(&mut self) {
-        let _ = self.communicator.send_command(GameCommand::Stop).await;
+        self.communicator.send_command(GameCommand::Stop).await;
     }
 
     pub fn assign_new_stone(&mut self, stone: Stone) {

@@ -6,21 +6,36 @@ use crossterm::terminal::{Clear, disable_raw_mode, enable_raw_mode};
 use std::io;
 use std::str::FromStr;
 
-pub fn wait_for_press_of(key_codes: Vec<KeyCode>) -> io::Result<KeyCode> {
-    enable_raw_mode()?;
+struct RawModeGuard;
+
+impl RawModeGuard {
+    fn new() -> io::Result<Self> {
+        enable_raw_mode()?;
+        Ok(RawModeGuard)
+    }
+}
+
+impl Drop for RawModeGuard {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+    }
+}
+
+pub fn wait_for_press_of(key_codes: Vec<KeyCode>, activate_raw: bool) -> io::Result<KeyCode> {
+    let _guard: RawModeGuard;
+    if activate_raw {
+        _guard = RawModeGuard::new()?;
+    }
     loop {
         match read()? {
             Event::FocusGained => {}
             Event::FocusLost => {}
             Event::Key(key) => {
                 if key_codes.contains(&key.code) {
-                    disable_raw_mode()?;
                     return Ok(key.code);
                 }
             }
-            Event::Mouse(_) => {}
-            Event::Paste(_) => {}
-            Event::Resize(_, _) => {}
+            _ => {}
         }
     }
 }

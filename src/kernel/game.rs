@@ -203,7 +203,7 @@ impl Game {
                     }
                     println!("Finished round {}/{}", self.counter, rounds);
                     println!("Press enter to start next round");
-                    wait_for_press_of(vec![Enter]).unwrap();
+                    wait_for_press_of(vec![Enter], true).unwrap();
                 }
                 GameMode::Points(max_points) => {
                     self.counter = self
@@ -217,14 +217,16 @@ impl Game {
                     }
                     println!("The best player has {}/{} points", self.counter, max_points);
                     println!("Press enter to start next round");
-                    wait_for_press_of(vec![Enter]).unwrap();
+                    wait_for_press_of(vec![Enter], true).unwrap();
                 }
             }
             self.reset_game();
         }
 
         self.print_final_points();
-        self.current_player_mut().stop_game().await;
+        for player in &mut self.players {
+            player.stop_game().await
+        }
     }
 
     fn print_final_points(&mut self) {

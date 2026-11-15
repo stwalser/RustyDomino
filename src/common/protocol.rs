@@ -19,4 +19,5 @@ pub enum ClientAnswer {
     SideChosen(Side),
     DrawStone,
     NoMoveAccepted,
+    WillStop
 }
